@@ -33,9 +33,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Preserve workflow
-        run: cp .github/workflows/cloud-builder.yml /tmp/cloud-builder.yml
-
       - name: Download ZIP
         env:
           ZIP_URL: ${{ inputs.zip_url }}
@@ -61,22 +58,33 @@ jobs:
           rm -rf /tmp/family-os-source/.git
           test -f /tmp/family-os-source/apps/mobile/pubspec.yaml
 
-      - name: Replace repository source
+      - name: Replace repository source safely
         run: |
-          find . -mindepth 1 -maxdepth 1 \
-            ! -name '.git' \
-            -exec rm -rf {} +
+          rsync -a --delete \
+            --exclude='.git/' \
+            --exclude='.github/workflows/' \
+            /tmp/family-os-source/ ./
 
-          cp -a /tmp/family-os-source/. .
+          git restore --source=HEAD --staged --worktree .github/workflows
 
-          mkdir -p .github/workflows
-          cp /tmp/cloud-builder.yml .github/workflows/cloud-builder.yml
+          if ! git diff --quiet -- .github/workflows; then
+            echo "Workflow files changed unexpectedly."
+            git diff -- .github/workflows
+            exit 1
+          fi
 
       - name: Commit uploaded source
         run: |
           git config user.name "Family OS Cloud Builder"
           git config user.email "actions@users.noreply.github.com"
-          git add --all
+
+          git add --all -- ':!.github/workflows/**'
+
+          if ! git diff --cached --quiet -- .github/workflows; then
+            echo "Refusing to commit workflow changes."
+            git diff --cached -- .github/workflows
+            exit 1
+          fi
 
           if ! git diff --cached --quiet; then
             git commit -m "build: upload source for v${{ inputs.version }}"
@@ -103,6 +111,13 @@ jobs:
             --project-name family_os \
             --platforms android,ios \
             .
+
+      - name: Remove generated default test
+        working-directory: apps/mobile
+        run: |
+          if [ -f test/widget_test.dart ] && grep -q "MyApp" test/widget_test.dart; then
+            rm test/widget_test.dart
+          fi
 
       - name: Install dependencies
         working-directory: apps/mobile
