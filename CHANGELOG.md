@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.6
+- Wrapped the app widget test with Riverpod `ProviderScope`.
+- Kept the Today screen assertions active.
+
 ## 1.0.5
 - Rebuilt Cloud Builder workflow from scratch.
 - Preserved ZIP download and validation steps.
