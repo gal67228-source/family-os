@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.7
+- Added Flutter Material, Widgets and Cupertino localization delegates.
+- Fixed Hebrew Material localizations for AppBar and NavigationBar.
+- Strengthened the widget test to fail on framework exceptions.
+
 ## 1.0.6
 - Wrapped the app widget test with Riverpod `ProviderScope`.
 - Kept the Today screen assertions active.

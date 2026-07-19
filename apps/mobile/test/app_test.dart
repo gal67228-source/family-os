@@ -3,7 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  testWidgets('shows the Today screen', (WidgetTester tester) async {
+  testWidgets('shows the Today screen without framework exceptions',
+      (WidgetTester tester) async {
     await tester.pumpWidget(
       const ProviderScope(
         child: FamilyOsApp(),
@@ -11,6 +12,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
+    expect(tester.takeException(), isNull);
     expect(find.text('משפחת כהן'), findsOneWidget);
     expect(find.text('המשימות שלי'), findsOneWidget);
   });

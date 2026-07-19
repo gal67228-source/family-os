@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 
 import '../core/theme/app_theme.dart';
 import 'router.dart';
@@ -15,6 +16,11 @@ class FamilyOsApp extends StatelessWidget {
       supportedLocales: const <Locale>[
         Locale('he'),
         Locale('en'),
+      ],
+      localizationsDelegates: const <LocalizationsDelegate<dynamic>>[
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
       ],
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
