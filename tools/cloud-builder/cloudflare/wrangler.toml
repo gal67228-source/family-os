@@ -1,0 +1,10 @@
+name = "family-os-builder"
+main = "src/worker.js"
+compatibility_date = "2026-07-01"
+
+[[r2_buckets]]
+binding = "BUILDS"
+bucket_name = "family-os-builds"
+
+[triggers]
+crons = ["15 * * * *"]
