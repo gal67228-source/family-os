@@ -1,0 +1,93 @@
+name: Android Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/mobile
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Generate platform projects
+        run: flutter create --org com.familyos --project-name family_os --platforms android,ios .
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Verify
+        run: |
+          dart format --output=none --set-exit-if-changed lib test
+          flutter analyze
+          flutter test
+
+      - name: Resolve version
+        id: version
+        shell: bash
+        run: |
+          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+            VERSION="${GITHUB_REF_NAME#v}"
+          else
+            VERSION="0.1.${GITHUB_RUN_NUMBER}"
+          fi
+          echo "version=${VERSION}" >> "${GITHUB_OUTPUT}"
+
+      - name: Build APK and AAB
+        run: |
+          flutter build apk --release \
+            --build-name "${{ steps.version.outputs.version }}" \
+            --build-number "${{ github.run_number }}"
+          flutter build appbundle --release \
+            --build-name "${{ steps.version.outputs.version }}" \
+            --build-number "${{ github.run_number }}"
+
+      - name: Rename files
+        shell: bash
+        run: |
+          mkdir -p release
+          cp build/app/outputs/flutter-apk/app-release.apk \
+            "release/family-os-v${{ steps.version.outputs.version }}.apk"
+          cp build/app/outputs/bundle/release/app-release.aab \
+            "release/family-os-v${{ steps.version.outputs.version }}.aab"
+
+      - name: Upload workflow artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: family-os-v${{ steps.version.outputs.version }}
+          path: apps/mobile/release/*
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Create GitHub Release
+        if: github.ref_type == 'tag'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        working-directory: .
+        run: |
+          gh release create "${GITHUB_REF_NAME}" \
+            apps/mobile/release/* \
+            --generate-notes \
+            --title "Family OS ${GITHUB_REF_NAME}"

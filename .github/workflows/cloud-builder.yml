@@ -1,0 +1,153 @@
+name: Cloud Builder
+
+on:
+  workflow_dispatch:
+    inputs:
+      zip_url:
+        description: Temporary private ZIP URL
+        required: true
+        type: string
+      version:
+        description: Semantic version
+        required: true
+        type: string
+      upload_key:
+        description: Internal upload identifier
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: cloud-builder
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout current repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Preserve workflow
+        run: cp .github/workflows/cloud-builder.yml /tmp/cloud-builder.yml
+
+      - name: Download ZIP
+        env:
+          ZIP_URL: ${{ inputs.zip_url }}
+        run: |
+          curl --fail --location --retry 3 \
+            --output /tmp/family-os.zip \
+            "$ZIP_URL"
+
+      - name: Validate ZIP
+        run: |
+          test "$(stat -c%s /tmp/family-os.zip)" -le 99614720
+          unzip -tq /tmp/family-os.zip
+
+          rm -rf /tmp/family-os-source
+          mkdir -p /tmp/family-os-source
+          unzip -q /tmp/family-os.zip -d /tmp/family-os-source
+
+          if find /tmp/family-os-source -type l | grep -q .; then
+            echo "Symbolic links are not allowed."
+            exit 1
+          fi
+
+          rm -rf /tmp/family-os-source/.git
+          test -f /tmp/family-os-source/apps/mobile/pubspec.yaml
+
+      - name: Replace repository source
+        run: |
+          find . -mindepth 1 -maxdepth 1 \
+            ! -name '.git' \
+            -exec rm -rf {} +
+
+          cp -a /tmp/family-os-source/. .
+
+          mkdir -p .github/workflows
+          cp /tmp/cloud-builder.yml .github/workflows/cloud-builder.yml
+
+      - name: Commit uploaded source
+        run: |
+          git config user.name "Family OS Cloud Builder"
+          git config user.email "actions@users.noreply.github.com"
+          git add --all
+
+          if ! git diff --cached --quiet; then
+            git commit -m "build: upload source for v${{ inputs.version }}"
+            git push origin HEAD:main
+          fi
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Generate Android project
+        working-directory: apps/mobile
+        run: |
+          flutter create \
+            --org com.familyos \
+            --project-name family_os \
+            --platforms android,ios \
+            .
+
+      - name: Install dependencies
+        working-directory: apps/mobile
+        run: flutter pub get
+
+      - name: Verify project
+        working-directory: apps/mobile
+        run: |
+          dart format --output=none --set-exit-if-changed lib test
+          flutter analyze
+          flutter test
+
+      - name: Build APK and AAB
+        working-directory: apps/mobile
+        run: |
+          flutter build apk --release \
+            --build-name "${{ inputs.version }}" \
+            --build-number "${{ github.run_number }}"
+
+          flutter build appbundle --release \
+            --build-name "${{ inputs.version }}" \
+            --build-number "${{ github.run_number }}"
+
+      - name: Prepare artifacts
+        run: |
+          mkdir -p release
+          cp apps/mobile/build/app/outputs/flutter-apk/app-release.apk \
+            "release/family-os-v${{ inputs.version }}-build-${{ github.run_number }}.apk"
+          cp apps/mobile/build/app/outputs/bundle/release/app-release.aab \
+            "release/family-os-v${{ inputs.version }}-build-${{ github.run_number }}.aab"
+
+      - name: Upload Actions artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: family-os-v${{ inputs.version }}-build-${{ github.run_number }}
+          path: release/*
+          retention-days: 14
+          if-no-files-found: error
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: build-v${{ inputs.version }}-${{ github.run_number }}
+        run: |
+          gh release create "$TAG" release/* \
+            --target main \
+            --title "Family OS v${{ inputs.version }} · Build ${{ github.run_number }}" \
+            --notes "Automatic build from the Family OS Cloud Builder."
