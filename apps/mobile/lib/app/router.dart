@@ -7,8 +7,7 @@ import '../features/tasks/presentation/tasks_screen.dart';
 import '../features/today/presentation/today_screen.dart';
 import 'shell_screen.dart';
 
-final GlobalKey<NavigatorState> _rootNavigatorKey =
-    GlobalKey<NavigatorState>();
+final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>();
 
 final GoRouter appRouter = GoRouter(
   navigatorKey: _rootNavigatorKey,

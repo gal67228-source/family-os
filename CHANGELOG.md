@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.0.1
+- Fixed Dart formatting in `apps/mobile/lib/app/router.dart`.
+
 ## 0.1.0
 
 - Added Flutter starter application.
