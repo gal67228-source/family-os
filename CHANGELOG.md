@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.2.0-ui3
+- Forced the application to use light mode only.
+- Removed automatic dark-mode switching based on the device theme.
+
 ## 1.2.0-ui2
 - Rebuilt `shell_screen.dart` with balanced, readable widget structure.
 - Fixed the quick-add bottom sheet syntax error.
