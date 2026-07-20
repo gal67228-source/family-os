@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/widgets/search_field.dart';
+
 class TasksScreen extends StatelessWidget {
   const TasksScreen({super.key});
 
@@ -12,10 +14,7 @@ class TasksScreen extends StatelessWidget {
         body: ListView(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 112),
           children: const <Widget>[
-            SearchBar(
-              hintText: 'חיפוש משימות',
-              leading: Icon(Icons.search_rounded),
-            ),
+            SearchField(hintText: 'חיפוש משימות'),
             SizedBox(height: 16),
             Card(
               child: ListTile(

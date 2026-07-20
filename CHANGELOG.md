@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.4
+- Added centralized design tokens.
+- Expanded light and dark Material 3 themes.
+- Added reusable buttons, cards, text fields, search, scaffold and state views.
+- Added design-system widget tests.
+
 ## 1.1.3
 - Renamed the family domain model to `FamilyWorkspace` to avoid a Riverpod symbol collision.
 - Updated every family-model import and type reference.
