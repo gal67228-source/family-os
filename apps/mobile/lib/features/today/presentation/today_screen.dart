@@ -1,17 +1,41 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/widgets/section_card.dart';
+import '../../families/application/family_controller.dart';
 
-class TodayScreen extends StatelessWidget {
+class TodayScreen extends ConsumerWidget {
   const TodayScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final FamilyState familyState = ref.watch(familyControllerProvider);
+    final String familyName =
+        familyState.selectedFamily?.name ?? 'המשפחה שלי';
+
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('משפחת כהן'),
+          title: InkWell(
+            borderRadius: BorderRadius.circular(12),
+            onTap: () => context.push('/family/switch'),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 8,
+                vertical: 6,
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  Text(familyName),
+                  const SizedBox(width: 4),
+                  const Icon(Icons.expand_more_rounded),
+                ],
+              ),
+            ),
+          ),
           actions: <Widget>[
             IconButton(
               onPressed: () {},

@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.1.0
+- Added splash, login, registration and password reset screens.
+- Added local demo authentication controller with validation and loading states.
+- Added create family, join family, invite members and switch family flows.
+- Added Admin and regular-member role selection.
+- Added sign-out flow and family switching from the app shell.
+- Updated tests for the authentication flow.
+
 ## 1.0.7
 - Added Flutter Material, Widgets and Cupertino localization delegates.
 - Fixed Hebrew Material localizations for AppBar and NavigationBar.

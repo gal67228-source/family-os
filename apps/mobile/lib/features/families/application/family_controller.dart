@@ -1,0 +1,121 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../auth/domain/app_user.dart';
+import '../domain/family.dart';
+
+class FamilyState {
+  const FamilyState({
+    this.families = const <Family>[],
+    this.selectedFamilyId,
+    this.isLoading = false,
+    this.errorMessage,
+  });
+
+  final List<Family> families;
+  final String? selectedFamilyId;
+  final bool isLoading;
+  final String? errorMessage;
+
+  Family? get selectedFamily {
+    if (selectedFamilyId == null) {
+      return null;
+    }
+    for (final Family family in families) {
+      if (family.id == selectedFamilyId) {
+        return family;
+      }
+    }
+    return null;
+  }
+
+  FamilyState copyWith({
+    List<Family>? families,
+    String? selectedFamilyId,
+    bool clearSelectedFamily = false,
+    bool? isLoading,
+    String? errorMessage,
+    bool clearError = false,
+  }) {
+    return FamilyState(
+      families: families ?? this.families,
+      selectedFamilyId:
+          clearSelectedFamily ? null : selectedFamilyId ?? this.selectedFamilyId,
+      isLoading: isLoading ?? this.isLoading,
+      errorMessage: clearError ? null : errorMessage ?? this.errorMessage,
+    );
+  }
+}
+
+class FamilyController extends StateNotifier<FamilyState> {
+  FamilyController() : super(const FamilyState());
+
+  Future<Family?> createFamily({
+    required String name,
+    required UserRole role,
+  }) async {
+    state = state.copyWith(isLoading: true, clearError: true);
+    await Future<void>.delayed(const Duration(milliseconds: 300));
+
+    if (name.trim().length < 2) {
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: 'שם המשפחה קצר מדי.',
+      );
+      return null;
+    }
+
+    final Family family = Family(
+      id: DateTime.now().microsecondsSinceEpoch.toString(),
+      name: name.trim(),
+      role: role,
+    );
+
+    state = FamilyState(
+      families: <Family>[...state.families, family],
+      selectedFamilyId: family.id,
+    );
+    return family;
+  }
+
+  Future<Family?> joinFamily({
+    required String invitationCode,
+    required UserRole role,
+  }) async {
+    state = state.copyWith(isLoading: true, clearError: true);
+    await Future<void>.delayed(const Duration(milliseconds: 300));
+
+    if (invitationCode.trim().length < 6) {
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: 'קוד ההזמנה חייב להכיל לפחות 6 תווים.',
+      );
+      return null;
+    }
+
+    final Family family = Family(
+      id: DateTime.now().microsecondsSinceEpoch.toString(),
+      name: 'המשפחה שלי',
+      role: role,
+    );
+
+    state = FamilyState(
+      families: <Family>[...state.families, family],
+      selectedFamilyId: family.id,
+    );
+    return family;
+  }
+
+  void selectFamily(String familyId) {
+    state = state.copyWith(selectedFamilyId: familyId, clearError: true);
+  }
+
+  void clear() {
+    state = const FamilyState();
+  }
+}
+
+final StateNotifierProvider<FamilyController, FamilyState>
+    familyControllerProvider =
+    StateNotifierProvider<FamilyController, FamilyState>(
+  (Ref ref) => FamilyController(),
+);
