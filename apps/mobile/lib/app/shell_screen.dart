@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../core/design/app_colors.dart';
+
 class ShellScreen extends StatelessWidget {
   const ShellScreen({
     required this.navigationShell,
@@ -13,37 +15,58 @@ class ShellScreen extends StatelessWidget {
     showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       builder: (BuildContext context) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: <Widget>[
-                Text(
-                  'מה תרצה להוסיף?',
-                  style: Theme.of(context).textTheme.titleLarge,
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 16),
-                const _QuickAddTile(
-                  icon: Icons.task_alt_rounded,
-                  title: 'משימה',
-                ),
-                const _QuickAddTile(
-                  icon: Icons.shopping_cart_rounded,
-                  title: 'מוצר לקניות',
-                ),
-                const _QuickAddTile(
-                  icon: Icons.calendar_month_rounded,
-                  title: 'פעילות',
-                ),
-                const _QuickAddTile(
-                  icon: Icons.mic_rounded,
-                  title: 'הוספה בקול',
-                ),
-              ],
+        return const Directionality(
+          textDirection: TextDirection.rtl,
+          child: SafeArea(
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(24, 8, 24, 28),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  Text(
+                    'הוספה מהירה',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  SizedBox(height: 20),
+                  Wrap(
+                    spacing: 18,
+                    runSpacing: 18,
+                    alignment: WrapAlignment.center,
+                    children: <Widget>[
+                      _QuickAction(
+                        icon: Icons.check_circle_rounded,
+                        label: 'משימה',
+                        color: AppColors.secondary,
+                      ),
+                      _QuickAction(
+                        icon: Icons.shopping_cart_rounded,
+                        label: 'מוצר',
+                        color: AppColors.primary,
+                      ),
+                      _QuickAction(
+                        icon: Icons.calendar_month_rounded,
+                        label: 'אירוע',
+                        color: AppColors.accent,
+                      ),
+                      _QuickAction(
+                        icon: Icons.description_rounded,
+                        label: 'מסמך',
+                        color: Color(0xFF8B5CF6),
+                      ),
+                      _QuickAction(
+                        icon: Icons.mic_rounded,
+                        label: 'בקול',
+                        color: AppColors.error,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
         );
@@ -55,39 +78,80 @@ class ShellScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       body: navigationShell,
+      extendBody: true,
       floatingActionButton: FloatingActionButton(
         onPressed: () => _openQuickAdd(context),
-        tooltip: 'הוספה מהירה',
-        child: const Icon(Icons.add_rounded),
+        backgroundColor: AppColors.primary,
+        foregroundColor: Colors.white,
+        shape: const CircleBorder(),
+        child: const Icon(
+          Icons.add_rounded,
+          size: 30,
+        ),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: navigationShell.currentIndex,
-        onDestinationSelected: (int index) {
+      bottomNavigationBar: _BottomNavigation(
+        currentIndex: navigationShell.currentIndex,
+        onSelected: (int index) {
           navigationShell.goBranch(
             index,
             initialLocation: index == navigationShell.currentIndex,
           );
         },
-        destinations: const <NavigationDestination>[
-          NavigationDestination(
-            icon: Icon(Icons.today_outlined),
-            selectedIcon: Icon(Icons.today_rounded),
+      ),
+    );
+  }
+}
+
+class _BottomNavigation extends StatelessWidget {
+  const _BottomNavigation({
+    required this.currentIndex,
+    required this.onSelected,
+  });
+
+  final int currentIndex;
+  final ValueChanged<int> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return BottomAppBar(
+      height: 72,
+      color: Theme.of(context).colorScheme.surface,
+      elevation: 8,
+      shadowColor: Colors.black.withValues(alpha: 0.12),
+      notchMargin: 8,
+      shape: const CircularNotchedRectangle(),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: <Widget>[
+          _NavItem(
+            index: 0,
+            currentIndex: currentIndex,
+            icon: Icons.home_rounded,
             label: 'היום',
+            onSelected: onSelected,
           ),
-          NavigationDestination(
-            icon: Icon(Icons.check_circle_outline_rounded),
-            selectedIcon: Icon(Icons.check_circle_rounded),
+          _NavItem(
+            index: 1,
+            currentIndex: currentIndex,
+            icon: Icons.check_box_rounded,
             label: 'משימות',
+            onSelected: onSelected,
           ),
-          NavigationDestination(
-            icon: Icon(Icons.shopping_cart_outlined),
-            selectedIcon: Icon(Icons.shopping_cart_rounded),
+          const SizedBox(width: 48),
+          _NavItem(
+            index: 2,
+            currentIndex: currentIndex,
+            icon: Icons.shopping_cart_rounded,
             label: 'קניות',
+            onSelected: onSelected,
           ),
-          NavigationDestination(
-            icon: Icon(Icons.more_horiz_rounded),
+          _NavItem(
+            index: 3,
+            currentIndex: currentIndex,
+            icon: Icons.menu_rounded,
             label: 'עוד',
+            onSelected: onSelected,
           ),
         ],
       ),
@@ -95,21 +159,86 @@ class ShellScreen extends StatelessWidget {
   }
 }
 
-class _QuickAddTile extends StatelessWidget {
-  const _QuickAddTile({
+class _NavItem extends StatelessWidget {
+  const _NavItem({
+    required this.index,
+    required this.currentIndex,
     required this.icon,
-    required this.title,
+    required this.label,
+    required this.onSelected,
   });
 
+  final int index;
+  final int currentIndex;
   final IconData icon;
-  final String title;
+  final String label;
+  final ValueChanged<int> onSelected;
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      leading: Icon(icon),
-      title: Text(title),
-      onTap: () => Navigator.of(context).pop(),
+    final bool selected = index == currentIndex;
+    final Color color = selected ? AppColors.primary : const Color(0xFF6B7280);
+
+    return Expanded(
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: () => onSelected(index),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 6),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Icon(
+                icon,
+                color: color,
+                size: 22,
+              ),
+              const SizedBox(height: 3),
+              Text(
+                label,
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: color,
+                      fontWeight: selected ? FontWeight.w800 : FontWeight.w500,
+                    ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _QuickAction extends StatelessWidget {
+  const _QuickAction({
+    required this.icon,
+    required this.label,
+    required this.color,
+  });
+
+  final IconData icon;
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 78,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          CircleAvatar(
+            radius: 28,
+            backgroundColor: color.withValues(alpha: 0.12),
+            child: Icon(
+              icon,
+              color: color,
+            ),
+          ),
+          const SizedBox(height: 7),
+          Text(label),
+        ],
+      ),
     );
   }
 }

@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.2.0-ui2
+- Rebuilt `shell_screen.dart` with balanced, readable widget structure.
+- Fixed the quick-add bottom sheet syntax error.
+- Kept the centered FAB and custom bottom navigation design.
+
+## 1.2.0-ui1
+- Rebuilt the approved visual language.
+- Added custom centered FAB navigation.
+- Reworked Today, Tasks and Shopping screens with mock data.
+
 ## 1.1.4
 - Added centralized design tokens.
 - Expanded light and dark Material 3 themes.
