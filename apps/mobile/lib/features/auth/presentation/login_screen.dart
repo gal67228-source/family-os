@@ -15,8 +15,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final TextEditingController _email =
       TextEditingController(text: 'demo@familyos.app');
-  final TextEditingController _password =
-      TextEditingController(text: '123456');
+  final TextEditingController _password = TextEditingController(text: '123456');
   bool _obscurePassword = true;
 
   @override

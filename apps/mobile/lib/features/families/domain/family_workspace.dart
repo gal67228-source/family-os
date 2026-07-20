@@ -1,7 +1,7 @@
 import '../../auth/domain/app_user.dart';
 
-class Family {
-  const Family({
+class FamilyWorkspace {
+  const FamilyWorkspace({
     required this.id,
     required this.name,
     required this.role,

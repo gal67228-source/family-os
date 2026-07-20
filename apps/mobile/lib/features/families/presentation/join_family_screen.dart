@@ -13,8 +13,7 @@ class JoinFamilyScreen extends ConsumerStatefulWidget {
 }
 
 class _JoinFamilyScreenState extends ConsumerState<JoinFamilyScreen> {
-  final TextEditingController _code =
-      TextEditingController(text: 'FAMILY1');
+  final TextEditingController _code = TextEditingController(text: 'FAMILY1');
   UserRole _role = UserRole.member;
 
   @override

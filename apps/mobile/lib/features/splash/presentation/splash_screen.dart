@@ -39,7 +39,7 @@ class _SplashScreenState extends State<SplashScreen> {
               ),
               const SizedBox(height: 18),
               Text(
-                'Family OS',
+                'FamilyWorkspace OS',
                 style: Theme.of(context).textTheme.headlineMedium,
               ),
               const SizedBox(height: 8),

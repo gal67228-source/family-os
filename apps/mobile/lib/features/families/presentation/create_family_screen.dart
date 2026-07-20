@@ -9,13 +9,11 @@ class CreateFamilyScreen extends ConsumerStatefulWidget {
   const CreateFamilyScreen({super.key});
 
   @override
-  ConsumerState<CreateFamilyScreen> createState() =>
-      _CreateFamilyScreenState();
+  ConsumerState<CreateFamilyScreen> createState() => _CreateFamilyScreenState();
 }
 
 class _CreateFamilyScreenState extends ConsumerState<CreateFamilyScreen> {
-  final TextEditingController _name =
-      TextEditingController(text: 'משפחת כהן');
+  final TextEditingController _name = TextEditingController(text: 'משפחת כהן');
 
   @override
   void dispose() {
@@ -24,10 +22,11 @@ class _CreateFamilyScreenState extends ConsumerState<CreateFamilyScreen> {
   }
 
   Future<void> _create() async {
-    final family = await ref.read(familyControllerProvider.notifier).createFamily(
-          name: _name.text,
-          role: UserRole.admin,
-        );
+    final family =
+        await ref.read(familyControllerProvider.notifier).createFamily(
+              name: _name.text,
+              role: UserRole.admin,
+            );
 
     if (family != null && mounted) {
       context.go('/family/invite');

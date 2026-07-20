@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../application/family_controller.dart';
-import '../domain/family.dart';
+import '../domain/family_workspace.dart';
 
 class SwitchFamilyScreen extends ConsumerWidget {
   const SwitchFamilyScreen({super.key});
@@ -26,22 +26,30 @@ class SwitchFamilyScreen extends ConsumerWidget {
                   child: Text('עדיין לא קיימות משפחות בחשבון.'),
                 ),
               ),
-            for (final Family family in state.families)
-              Card(
-                child: RadioListTile<String>(
-                  value: family.id,
-                  groupValue: state.selectedFamilyId,
-                  title: Text(family.name),
-                  subtitle: Text(
-                    family.role.name == 'admin' ? 'Admin' : 'משתמש רגיל',
+            for (final FamilyWorkspace family in state.families)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: Card(
+                  child: ListTile(
+                    leading: Icon(
+                      state.selectedFamilyId == family.id
+                          ? Icons.check_circle_rounded
+                          : Icons.circle_outlined,
+                      color: state.selectedFamilyId == family.id
+                          ? Theme.of(context).colorScheme.primary
+                          : null,
+                    ),
+                    title: Text(family.name),
+                    subtitle: Text(
+                      family.role.name == 'admin' ? 'Admin' : 'משתמש רגיל',
+                    ),
+                    onTap: () {
+                      ref
+                          .read(familyControllerProvider.notifier)
+                          .selectFamily(family.id);
+                      context.pop();
+                    },
                   ),
-                  onChanged: (String? value) {
-                    if (value == null) {
-                      return;
-                    }
-                    ref.read(familyControllerProvider.notifier).selectFamily(value);
-                    context.pop();
-                  },
                 ),
               ),
             const SizedBox(height: 12),

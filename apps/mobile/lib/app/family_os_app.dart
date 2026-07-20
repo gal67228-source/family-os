@@ -11,7 +11,7 @@ class FamilyOsApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp.router(
       debugShowCheckedModeBanner: false,
-      title: 'Family OS',
+      title: 'FamilyWorkspace OS',
       locale: const Locale('he'),
       supportedLocales: const <Locale>[
         Locale('he'),

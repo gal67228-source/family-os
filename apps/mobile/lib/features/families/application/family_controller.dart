@@ -1,26 +1,26 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../auth/domain/app_user.dart';
-import '../domain/family.dart';
+import '../domain/family_workspace.dart';
 
 class FamilyState {
   const FamilyState({
-    this.families = const <Family>[],
+    this.families = const <FamilyWorkspace>[],
     this.selectedFamilyId,
     this.isLoading = false,
     this.errorMessage,
   });
 
-  final List<Family> families;
+  final List<FamilyWorkspace> families;
   final String? selectedFamilyId;
   final bool isLoading;
   final String? errorMessage;
 
-  Family? get selectedFamily {
+  FamilyWorkspace? get selectedFamily {
     if (selectedFamilyId == null) {
       return null;
     }
-    for (final Family family in families) {
+    for (final FamilyWorkspace family in families) {
       if (family.id == selectedFamilyId) {
         return family;
       }
@@ -29,7 +29,7 @@ class FamilyState {
   }
 
   FamilyState copyWith({
-    List<Family>? families,
+    List<FamilyWorkspace>? families,
     String? selectedFamilyId,
     bool clearSelectedFamily = false,
     bool? isLoading,
@@ -38,8 +38,9 @@ class FamilyState {
   }) {
     return FamilyState(
       families: families ?? this.families,
-      selectedFamilyId:
-          clearSelectedFamily ? null : selectedFamilyId ?? this.selectedFamilyId,
+      selectedFamilyId: clearSelectedFamily
+          ? null
+          : selectedFamilyId ?? this.selectedFamilyId,
       isLoading: isLoading ?? this.isLoading,
       errorMessage: clearError ? null : errorMessage ?? this.errorMessage,
     );
@@ -49,7 +50,7 @@ class FamilyState {
 class FamilyController extends StateNotifier<FamilyState> {
   FamilyController() : super(const FamilyState());
 
-  Future<Family?> createFamily({
+  Future<FamilyWorkspace?> createFamily({
     required String name,
     required UserRole role,
   }) async {
@@ -64,20 +65,20 @@ class FamilyController extends StateNotifier<FamilyState> {
       return null;
     }
 
-    final Family family = Family(
+    final FamilyWorkspace family = FamilyWorkspace(
       id: DateTime.now().microsecondsSinceEpoch.toString(),
       name: name.trim(),
       role: role,
     );
 
     state = FamilyState(
-      families: <Family>[...state.families, family],
+      families: <FamilyWorkspace>[...state.families, family],
       selectedFamilyId: family.id,
     );
     return family;
   }
 
-  Future<Family?> joinFamily({
+  Future<FamilyWorkspace?> joinFamily({
     required String invitationCode,
     required UserRole role,
   }) async {
@@ -92,14 +93,14 @@ class FamilyController extends StateNotifier<FamilyState> {
       return null;
     }
 
-    final Family family = Family(
+    final FamilyWorkspace family = FamilyWorkspace(
       id: DateTime.now().microsecondsSinceEpoch.toString(),
       name: 'המשפחה שלי',
       role: role,
     );
 
     state = FamilyState(
-      families: <Family>[...state.families, family],
+      families: <FamilyWorkspace>[...state.families, family],
       selectedFamilyId: family.id,
     );
     return family;

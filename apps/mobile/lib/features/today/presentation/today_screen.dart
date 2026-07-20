@@ -11,8 +11,7 @@ class TodayScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final FamilyState familyState = ref.watch(familyControllerProvider);
-    final String familyName =
-        familyState.selectedFamily?.name ?? 'המשפחה שלי';
+    final String familyName = familyState.selectedFamily?.name ?? 'המשפחה שלי';
 
     return Directionality(
       textDirection: TextDirection.rtl,

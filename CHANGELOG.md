@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.1.3
+- Renamed the family domain model to `FamilyWorkspace` to avoid a Riverpod symbol collision.
+- Updated every family-model import and type reference.
+- Replaced deprecated `RadioListTile` selection APIs with accessible tappable list items.
+
+## 1.1.2
+- Made the GitHub workflow permanent and minimal.
+- Moved build, format, analysis, tests, commit and release logic to `tools/ci/cloud_build.sh`.
+- Future ZIP uploads can update the build script without modifying `.github/workflows`.
+- Workflow updates should no longer be required after the one-time installation.
+
+## 1.1.1
+- Updated Cloud Builder to format source automatically.
+- Analyze and tests now run before any commit is pushed.
+- Only verified and formatted code is committed to main.
+
 ## 1.1.0
 - Added splash, login, registration and password reset screens.
 - Added local demo authentication controller with validation and loading states.
