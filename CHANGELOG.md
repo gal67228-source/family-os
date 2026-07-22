@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.4.1
+- Redirected successful family creation to the dashboard.
+- Redirected successful family joining to the dashboard.
+- Added a clear Home action to the family-management screen.
+
 ## 1.4.0-step1-stable
 - Added only the missing `softBlue` and `softPurple` constants.
 - Preserved the existing `softGreen` declaration.

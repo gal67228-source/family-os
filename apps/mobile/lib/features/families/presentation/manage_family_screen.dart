@@ -126,7 +126,16 @@ class _ManageFamilyScreenState extends ConsumerState<ManageFamilyScreen> {
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
-        appBar: AppBar(title: const Text('ניהול המשפחה')),
+        appBar: AppBar(
+          title: const Text('ניהול המשפחה'),
+          actions: <Widget>[
+            IconButton(
+              tooltip: 'חזרה לבית',
+              onPressed: () => context.go('/today'),
+              icon: const Icon(Icons.home_rounded),
+            ),
+          ],
+        ),
         body: family == null
             ? EmptyState(
                 icon: Icons.family_restroom_rounded,

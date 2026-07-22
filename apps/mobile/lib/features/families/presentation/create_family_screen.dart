@@ -44,7 +44,7 @@ class _CreateFamilyScreenState extends ConsumerState<CreateFamilyScreen> {
             );
 
     if (family != null && mounted) {
-      context.go('/family/manage');
+      context.go('/today');
     }
   }
 
