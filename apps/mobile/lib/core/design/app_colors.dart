@@ -13,4 +13,7 @@ abstract final class AppColors {
   static const Color textSecondary = Color(0xFF6B7280);
   static const Color divider = Color(0xFFE5E7EB);
   static const Color softGreen = Color(0xFFE9F8EF);
+  static const Color softBlue = Color(0xFFEAF2FF);
+  static const Color softPurple = Color(0xFFF3EEFF);
+  static const Color softOrange = Color(0xFFFFF3E3);
 }

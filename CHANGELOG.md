@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.4.0-step1-stable
+- Added only the missing `softBlue` and `softPurple` constants.
+- Preserved the existing `softGreen` declaration.
+- Verified that all AppColors names are unique.
+
+## 1.4.0-step1
+- Added a real dashboard connected to the active family.
+- Added live family-member count and family-aware navigation.
+- Added dashboard summary and reusable statistic cards.
+- Added empty state for accounts without an active family.
+- Added dashboard provider tests.
+
 ## 1.3.1
 - Replaced dynamic icon code points with stable icon IDs.
 - Added a Flutter 3.44-compatible constant icon mapper.
