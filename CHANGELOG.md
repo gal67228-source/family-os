@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.3.1
+- Replaced dynamic icon code points with stable icon IDs.
+- Added a Flutter 3.44-compatible constant icon mapper.
+- Fixed analyzer warnings in family screens.
+
+## 1.3.0
+- Added persistent local family storage with SharedPreferences.
+- Added family, member and role domain models.
+- Added create, join, switch and manage-family flows.
+- Added invite codes, active-family persistence and member management.
+- Added family-controller unit tests.
+
 ## 1.2.0-ui3
 - Forced the application to use light mode only.
 - Removed automatic dark-mode switching based on the device theme.

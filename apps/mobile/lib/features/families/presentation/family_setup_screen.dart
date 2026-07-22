@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/design/app_colors.dart';
+import '../../../core/widgets/app_card.dart';
+
 class FamilySetupScreen extends StatelessWidget {
   const FamilySetupScreen({super.key});
 
@@ -11,31 +14,35 @@ class FamilySetupScreen extends StatelessWidget {
       child: Scaffold(
         appBar: AppBar(title: const Text('המשפחה שלי')),
         body: ListView(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 32),
           children: <Widget>[
             Text(
               'איך תרצה להתחיל?',
-              style: Theme.of(context).textTheme.headlineSmall,
+              style: Theme.of(context).textTheme.headlineMedium,
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 6),
             const Text(
-              'אפשר ליצור משפחה חדשה או להצטרף למשפחה קיימת באמצעות קוד הזמנה.',
+              'צור משפחה חדשה או הצטרף למשפחה קיימת.',
             ),
-            const SizedBox(height: 24),
-            _SetupCard(
-              icon: Icons.add_home_work_rounded,
-              title: 'יצירת משפחה',
-              subtitle: 'אתה תהיה מנהל המשפחה הראשון.',
-              actionText: 'צור משפחה',
+            const SizedBox(height: 22),
+            AppCard(
               onTap: () => context.push('/family/create'),
+              child: const _SetupOption(
+                icon: Icons.add_home_work_rounded,
+                title: 'יצירת משפחה',
+                subtitle: 'צור מרחב חדש והזמן את בני המשפחה.',
+                color: AppColors.primary,
+              ),
             ),
             const SizedBox(height: 14),
-            _SetupCard(
-              icon: Icons.group_add_rounded,
-              title: 'הצטרפות למשפחה',
-              subtitle: 'הזן קוד הזמנה שקיבלת ממנהל המשפחה.',
-              actionText: 'הצטרף',
+            AppCard(
               onTap: () => context.push('/family/join'),
+              child: const _SetupOption(
+                icon: Icons.group_add_rounded,
+                title: 'הצטרפות למשפחה',
+                subtitle: 'השתמש בקוד הזמנה בן 6 תווים.',
+                color: AppColors.secondary,
+              ),
             ),
           ],
         ),
@@ -44,45 +51,44 @@ class FamilySetupScreen extends StatelessWidget {
   }
 }
 
-class _SetupCard extends StatelessWidget {
-  const _SetupCard({
+class _SetupOption extends StatelessWidget {
+  const _SetupOption({
     required this.icon,
     required this.title,
     required this.subtitle,
-    required this.actionText,
-    required this.onTap,
+    required this.color,
   });
 
   final IconData icon;
   final String title;
   final String subtitle;
-  final String actionText;
-  final VoidCallback onTap;
+  final Color color;
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          children: <Widget>[
-            Icon(
-              icon,
-              size: 46,
-              color: Theme.of(context).colorScheme.primary,
-            ),
-            const SizedBox(height: 12),
-            Text(title, style: Theme.of(context).textTheme.titleLarge),
-            const SizedBox(height: 8),
-            Text(subtitle, textAlign: TextAlign.center),
-            const SizedBox(height: 18),
-            FilledButton(
-              onPressed: onTap,
-              child: Text(actionText),
-            ),
-          ],
+    return Row(
+      children: <Widget>[
+        CircleAvatar(
+          radius: 28,
+          backgroundColor: color.withValues(alpha: 0.12),
+          child: Icon(icon, color: color),
         ),
-      ),
+        const SizedBox(width: 14),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Text(
+                title,
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              const SizedBox(height: 4),
+              Text(subtitle),
+            ],
+          ),
+        ),
+        const Icon(Icons.chevron_left_rounded),
+      ],
     );
   }
 }

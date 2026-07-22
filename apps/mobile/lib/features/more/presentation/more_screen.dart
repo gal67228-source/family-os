@@ -21,6 +21,11 @@ class MoreScreen extends ConsumerWidget {
               title: const Text('החלפת משפחה'),
               onTap: () => context.push('/family/switch'),
             ),
+            ListTile(
+              leading: const Icon(Icons.manage_accounts_rounded),
+              title: const Text('ניהול המשפחה'),
+              onTap: () => context.push('/family/manage'),
+            ),
             const ListTile(
               leading: Icon(Icons.calendar_month_rounded),
               title: Text('יומן משפחתי'),

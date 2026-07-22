@@ -8,6 +8,7 @@ import '../features/families/presentation/create_family_screen.dart';
 import '../features/families/presentation/family_setup_screen.dart';
 import '../features/families/presentation/invite_family_screen.dart';
 import '../features/families/presentation/join_family_screen.dart';
+import '../features/families/presentation/manage_family_screen.dart';
 import '../features/families/presentation/switch_family_screen.dart';
 import '../features/more/presentation/more_screen.dart';
 import '../features/shopping/presentation/shopping_screen.dart';
@@ -68,6 +69,12 @@ final GoRouter appRouter = GoRouter(
       path: '/family/invite',
       builder: (BuildContext context, GoRouterState state) {
         return const InviteFamilyScreen();
+      },
+    ),
+    GoRoute(
+      path: '/family/manage',
+      builder: (BuildContext context, GoRouterState state) {
+        return const ManageFamilyScreen();
       },
     ),
     GoRoute(
