@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.8.3
+- Moved the voice-add action next to the manual Add Product action.
+- Voice shopping now starts listening automatically when opened.
+- Restored the floating action button to manual product entry.
+
 ## 1.8.2
 - Rebuilt the corrupted dashboard provider test file.
 - Added complete in-memory repositories for families, tasks and shopping.

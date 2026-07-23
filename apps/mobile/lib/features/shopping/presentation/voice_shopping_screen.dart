@@ -30,7 +30,12 @@ class _VoiceShoppingScreenState extends ConsumerState<VoiceShoppingScreen> {
   @override
   void initState() {
     super.initState();
-    _initializeSpeech();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await _initializeSpeech();
+      if (mounted && _speechAvailable && !_speech.isListening) {
+        await _toggleListening();
+      }
+    });
   }
 
   Future<void> _initializeSpeech() async {
@@ -80,8 +85,10 @@ class _VoiceShoppingScreenState extends ConsumerState<VoiceShoppingScreen> {
 
     setState(() {
       _message = null;
-      _transcript = '';
-      _drafts = <VoiceShoppingDraft>[];
+      if (_transcript.isNotEmpty || _drafts.isNotEmpty) {
+        _transcript = '';
+        _drafts = <VoiceShoppingDraft>[];
+      }
     });
 
     final List<LocaleName> locales = await _speech.locales();

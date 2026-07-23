@@ -27,11 +27,6 @@ class ShoppingScreen extends ConsumerWidget {
           title: const Text('קניות'),
           actions: <Widget>[
             IconButton(
-              tooltip: 'הוספה קולית',
-              onPressed: () => context.push('/shopping/voice'),
-              icon: const Icon(Icons.mic_rounded),
-            ),
-            IconButton(
               tooltip: 'מוצרים קבועים',
               onPressed: () => context.push('/shopping/recurring'),
               icon: const Icon(Icons.repeat_rounded),
@@ -118,13 +113,26 @@ class ShoppingScreen extends ConsumerWidget {
                                     label: const Text('מצב קנייה'),
                                   ),
                                 ),
-                                const SizedBox(width: 10),
+                              ],
+                            ),
+                            const SizedBox(height: 10),
+                            Row(
+                              children: <Widget>[
                                 Expanded(
                                   child: FilledButton.icon(
                                     onPressed: () =>
                                         context.push('/shopping/add'),
                                     icon: const Icon(Icons.add_rounded),
                                     label: const Text('הוסף מוצר'),
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: FilledButton.tonalIcon(
+                                    onPressed: () =>
+                                        context.push('/shopping/voice'),
+                                    icon: const Icon(Icons.mic_rounded),
+                                    label: const Text('הוסף בקול'),
                                   ),
                                 ),
                               ],
@@ -212,10 +220,9 @@ class ShoppingScreen extends ConsumerWidget {
                         ],
                     ],
                   ),
-        floatingActionButton: FloatingActionButton.extended(
-          onPressed: () => context.push('/shopping/voice'),
-          icon: const Icon(Icons.mic_rounded),
-          label: const Text('הוסף בקול'),
+        floatingActionButton: FloatingActionButton(
+          onPressed: () => context.push('/shopping/add'),
+          child: const Icon(Icons.add_rounded),
         ),
       ),
     );
