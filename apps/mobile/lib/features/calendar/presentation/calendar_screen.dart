@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/design/app_colors.dart';
-import '../../../core/widgets/app_card.dart';
 import '../application/calendar_controller.dart';
 import '../domain/calendar_event.dart';
 
@@ -18,7 +17,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
   late DateTime _visibleMonth;
   late DateTime _selectedDay;
 
-  static const List<String> _months = <String>[
+  static const List<String> _monthNames = <String>[
     'ינואר',
     'פברואר',
     'מרץ',
@@ -33,7 +32,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     'דצמבר',
   ];
 
-  static const List<String> _weekdays = <String>[
+  static const List<String> _weekdayNames = <String>[
     'א׳',
     'ב׳',
     'ג׳',
@@ -46,42 +45,49 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
   @override
   void initState() {
     super.initState();
+    _selectToday();
+  }
+
+  void _selectToday() {
     final DateTime now = DateTime.now();
     _visibleMonth = DateTime(now.year, now.month);
     _selectedDay = DateTime(now.year, now.month, now.day);
   }
 
-  bool _sameDay(DateTime first, DateTime second) =>
-      first.year == second.year &&
-      first.month == second.month &&
-      first.day == second.day;
+  bool _isSameDay(DateTime first, DateTime second) {
+    return first.year == second.year &&
+        first.month == second.month &&
+        first.day == second.day;
+  }
 
-  bool _occursOn(CalendarEvent event, DateTime day) {
-    final DateTime startDay =
-        DateTime(event.start.year, event.start.month, event.start.day);
+  bool _eventOccursOn(CalendarEvent event, DateTime day) {
+    final DateTime eventStart = DateTime(
+      event.start.year,
+      event.start.month,
+      event.start.day,
+    );
+    final DateTime eventEnd = DateTime(
+      event.end.year,
+      event.end.month,
+      event.end.day,
+    );
     final DateTime target = DateTime(day.year, day.month, day.day);
 
-    if (event.recurrence == CalendarRecurrence.none) {
-      final DateTime endDay =
-          DateTime(event.end.year, event.end.month, event.end.day);
-      return !target.isBefore(startDay) && !target.isAfter(endDay);
-    }
-
-    if (target.isBefore(startDay)) {
+    if (target.isBefore(eventStart)) {
       return false;
     }
 
     switch (event.recurrence) {
       case CalendarRecurrence.none:
-        return false;
+        return !target.isAfter(eventEnd);
       case CalendarRecurrence.daily:
         return true;
       case CalendarRecurrence.weekly:
-        return target.weekday == startDay.weekday;
+        return target.weekday == eventStart.weekday;
       case CalendarRecurrence.monthly:
-        return target.day == startDay.day;
+        return target.day == eventStart.day;
       case CalendarRecurrence.yearly:
-        return target.month == startDay.month && target.day == startDay.day;
+        return target.month == eventStart.month && target.day == eventStart.day;
     }
   }
 
@@ -89,78 +95,88 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     List<CalendarEvent> events,
     DateTime day,
   ) {
-    return events.where((CalendarEvent event) => _occursOn(event, day)).toList()
-      ..sort(
-        (CalendarEvent first, CalendarEvent second) =>
-            first.start.compareTo(second.start),
-      );
-  }
+    final List<CalendarEvent> result = events
+        .where(
+          (CalendarEvent event) => _eventOccursOn(event, day),
+        )
+        .toList();
 
-  List<DateTime?> _monthCells() {
-    final DateTime first = DateTime(_visibleMonth.year, _visibleMonth.month, 1);
-    final int leading = first.weekday % 7;
-    final int days =
-        DateTime(_visibleMonth.year, _visibleMonth.month + 1, 0).day;
-
-    final List<DateTime?> result =
-        List<DateTime?>.filled(leading, null, growable: true);
-
-    result.addAll(
-      List<DateTime>.generate(
-        days,
-        (int index) =>
-            DateTime(_visibleMonth.year, _visibleMonth.month, index + 1),
-      ),
+    result.sort(
+      (CalendarEvent first, CalendarEvent second) =>
+          first.start.compareTo(second.start),
     );
-
-    while (result.length % 7 != 0) {
-      result.add(null);
-    }
 
     return result;
   }
 
-  void _moveMonth(int delta) {
+  List<DateTime?> _buildMonthCells() {
+    final DateTime firstDay = DateTime(
+      _visibleMonth.year,
+      _visibleMonth.month,
+      1,
+    );
+    final int leadingEmptyCells = firstDay.weekday % 7;
+    final int numberOfDays = DateTime(
+      _visibleMonth.year,
+      _visibleMonth.month + 1,
+      0,
+    ).day;
+
+    final List<DateTime?> cells = <DateTime?>[];
+
+    for (int index = 0; index < leadingEmptyCells; index++) {
+      cells.add(null);
+    }
+
+    for (int day = 1; day <= numberOfDays; day++) {
+      cells.add(
+        DateTime(
+          _visibleMonth.year,
+          _visibleMonth.month,
+          day,
+        ),
+      );
+    }
+
+    while (cells.length % 7 != 0) {
+      cells.add(null);
+    }
+
+    return cells;
+  }
+
+  void _changeMonth(int offset) {
     setState(() {
-      _visibleMonth = DateTime(_visibleMonth.year, _visibleMonth.month + delta);
-      _selectedDay = DateTime(_visibleMonth.year, _visibleMonth.month, 1);
+      _visibleMonth = DateTime(
+        _visibleMonth.year,
+        _visibleMonth.month + offset,
+      );
+      _selectedDay = DateTime(
+        _visibleMonth.year,
+        _visibleMonth.month,
+        1,
+      );
     });
   }
 
   void _goToToday() {
-    final DateTime now = DateTime.now();
-    setState(() {
-      _visibleMonth = DateTime(now.year, now.month);
-      _selectedDay = DateTime(now.year, now.month, now.day);
-    });
+    setState(_selectToday);
   }
 
-  String _timeLabel(CalendarEvent event) {
+  String _eventTime(CalendarEvent event) {
     if (event.isAllDay) {
       return 'כל היום';
     }
 
-    final String startHour = event.start.hour.toString().padLeft(2, '0');
-    final String startMinute = event.start.minute.toString().padLeft(2, '0');
-    final String endHour = event.end.hour.toString().padLeft(2, '0');
-    final String endMinute = event.end.minute.toString().padLeft(2, '0');
+    String twoDigits(int value) => value.toString().padLeft(2, '0');
 
-    return '$startHour:$startMinute–$endHour:$endMinute';
+    return '${twoDigits(event.start.hour)}:'
+        '${twoDigits(event.start.minute)}';
   }
 
-  String _selectedDateLabel() {
-    const List<String> weekdayNames = <String>[
-      'ראשון',
-      'שני',
-      'שלישי',
-      'רביעי',
-      'חמישי',
-      'שישי',
-      'שבת',
-    ];
-
-    return '${weekdayNames[_selectedDay.weekday % 7]}, '
-        '${_selectedDay.day} ${_months[_selectedDay.month - 1]}';
+  String _selectedDateTitle() {
+    return '${_selectedDay.day} '
+        '${_monthNames[_selectedDay.month - 1]}';
   }
 
   IconData _eventIcon(CalendarEventType type) {
@@ -188,12 +204,12 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final CalendarState state = ref.watch(calendarControllerProvider);
-    final List<CalendarEvent> events =
+    final CalendarState calendarState = ref.watch(calendarControllerProvider);
+    final List<CalendarEvent> familyEvents =
         ref.watch(activeFamilyCalendarEventsProvider);
     final List<CalendarEvent> selectedEvents =
-        _eventsForDay(events, _selectedDay);
-    final List<DateTime?> cells = _monthCells();
+        _eventsForDay(familyEvents, _selectedDay);
+    final List<DateTime?> monthCells = _buildMonthCells();
 
     return Directionality(
       textDirection: TextDirection.rtl,
@@ -204,337 +220,365 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
             'יומן משפחתי',
             style: TextStyle(fontWeight: FontWeight.w800),
           ),
-          centerTitle: false,
           actions: <Widget>[
+            TextButton(
+              onPressed: _goToToday,
+              child: const Text('היום'),
+            ),
             IconButton(
-              tooltip: 'חיפוש',
-              onPressed: () {},
-              icon: const Icon(Icons.search_rounded),
+              tooltip: 'אירוע חדש',
+              onPressed: () {
+                context.push(
+                  '/calendar/new?date='
+                  '${_selectedDay.toIso8601String()}',
+                );
+              },
+              icon: const Icon(Icons.add_rounded),
             ),
           ],
         ),
-        floatingActionButton: FloatingActionButton(
-          onPressed: () => context.push(
-            '/calendar/new?date=${_selectedDay.toIso8601String()}',
-          ),
+        floatingActionButton: FloatingActionButton.small(
+          onPressed: () {
+            context.push(
+              '/calendar/new?date=${_selectedDay.toIso8601String()}',
+            );
+          },
           backgroundColor: const Color(0xFF6D3BE7),
           foregroundColor: Colors.white,
-          child: const Icon(Icons.add_rounded, size: 30),
+          child: const Icon(Icons.add_rounded),
         ),
-        body: state.isLoading
+        body: calendarState.isLoading
             ? const Center(child: CircularProgressIndicator())
-            : ListView(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 110),
-                children: <Widget>[
-                  Row(
-                    children: <Widget>[
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: <Widget>[
-                            Text(
-                              '${_months[_visibleMonth.month - 1]} '
-                              '${_visibleMonth.year}',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .headlineSmall
-                                  ?.copyWith(
-                                    fontWeight: FontWeight.w900,
-                                  ),
-                            ),
-                            const SizedBox(height: 3),
-                            Text(
-                              'היומן המשפחתי שלכם',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodyMedium
-                                  ?.copyWith(
-                                    color: AppColors.textSecondary,
-                                  ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      FilledButton.tonal(
-                        onPressed: _goToToday,
-                        style: FilledButton.styleFrom(
-                          backgroundColor: AppColors.softPurple,
-                          foregroundColor: const Color(0xFF6D3BE7),
-                        ),
-                        child: const Text('היום'),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  AppCard(
-                    padding: const EdgeInsets.fromLTRB(12, 14, 12, 12),
-                    child: Column(
-                      children: <Widget>[
-                        Row(
-                          children: <Widget>[
-                            IconButton(
-                              onPressed: () => _moveMonth(1),
-                              icon: const Icon(
-                                Icons.chevron_right_rounded,
-                              ),
-                            ),
-                            Expanded(
-                              child: Text(
-                                '${_months[_visibleMonth.month - 1]} '
-                                '${_visibleMonth.year}',
-                                textAlign: TextAlign.center,
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .titleLarge
-                                    ?.copyWith(
-                                      fontWeight: FontWeight.w900,
-                                    ),
-                              ),
-                            ),
-                            IconButton(
-                              onPressed: () => _moveMonth(-1),
-                              icon: const Icon(
-                                Icons.chevron_left_rounded,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          children: <Widget>[
-                            for (final String day in _weekdays)
-                              Expanded(
-                                child: Center(
-                                  child: Text(
-                                    day,
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.w700,
-                                      color: AppColors.textSecondary,
+            : SafeArea(
+                child: Column(
+                  children: <Widget>[
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(12, 4, 12, 0),
+                      child: Card(
+                        margin: EdgeInsets.zero,
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(8, 4, 8, 8),
+                          child: Column(
+                            children: <Widget>[
+                              Row(
+                                children: <Widget>[
+                                  IconButton(
+                                    visualDensity: VisualDensity.compact,
+                                    onPressed: () => _changeMonth(1),
+                                    icon: const Icon(
+                                      Icons.chevron_right_rounded,
                                     ),
                                   ),
-                                ),
+                                  Expanded(
+                                    child: Text(
+                                      '${_monthNames[_visibleMonth.month - 1]} '
+                                      '${_visibleMonth.year}',
+                                      textAlign: TextAlign.center,
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .titleMedium
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.w900,
+                                          ),
+                                    ),
+                                  ),
+                                  IconButton(
+                                    visualDensity: VisualDensity.compact,
+                                    onPressed: () => _changeMonth(-1),
+                                    icon: const Icon(
+                                      Icons.chevron_left_rounded,
+                                    ),
+                                  ),
+                                ],
                               ),
-                          ],
-                        ),
-                        const SizedBox(height: 6),
-                        GridView.builder(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          gridDelegate:
-                              const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 7,
-                            childAspectRatio: 0.88,
-                          ),
-                          itemCount: cells.length,
-                          itemBuilder: (BuildContext context, int index) {
-                            final DateTime? day = cells[index];
-
-                            if (day == null) {
-                              return const SizedBox.shrink();
-                            }
-
-                            final List<CalendarEvent> dayEvents =
-                                _eventsForDay(events, day);
-                            final bool selected = _sameDay(day, _selectedDay);
-                            final bool today = _sameDay(day, DateTime.now());
-
-                            return InkWell(
-                              borderRadius: BorderRadius.circular(18),
-                              onTap: () => setState(() => _selectedDay = day),
-                              child: Padding(
-                                padding: const EdgeInsets.all(2),
-                                child: Column(
-                                  children: <Widget>[
-                                    AnimatedContainer(
-                                      duration:
-                                          const Duration(milliseconds: 180),
-                                      width: 38,
-                                      height: 38,
-                                      alignment: Alignment.center,
-                                      decoration: BoxDecoration(
-                                        color: selected
-                                            ? const Color(0xFF6D3BE7)
-                                            : today
-                                                ? AppColors.softPurple
-                                                : Colors.transparent,
-                                        shape: BoxShape.circle,
-                                      ),
-                                      child: Text(
-                                        '${day.day}',
-                                        style: TextStyle(
-                                          fontWeight: selected || today
-                                              ? FontWeight.w900
-                                              : FontWeight.w500,
-                                          color: selected
-                                              ? Colors.white
-                                              : today
-                                                  ? const Color(0xFF6D3BE7)
-                                                  : AppColors.textPrimary,
+                              Row(
+                                children: <Widget>[
+                                  for (final String weekday in _weekdayNames)
+                                    Expanded(
+                                      child: Center(
+                                        child: Text(
+                                          weekday,
+                                          style: const TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w700,
+                                            color: AppColors.textSecondary,
+                                          ),
                                         ),
                                       ),
                                     ),
-                                    const SizedBox(height: 5),
-                                    Wrap(
-                                      spacing: 3,
-                                      runSpacing: 2,
-                                      alignment: WrapAlignment.center,
-                                      children: dayEvents
-                                          .take(3)
-                                          .map(
-                                            (CalendarEvent event) => Container(
-                                              width: 6,
-                                              height: 6,
-                                              decoration: BoxDecoration(
-                                                color: Color(event.colorValue),
-                                                shape: BoxShape.circle,
-                                              ),
-                                            ),
-                                          )
-                                          .toList(),
-                                    ),
-                                  ],
-                                ),
+                                ],
                               ),
-                            );
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  Text(
-                    _selectedDateLabel(),
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.w900,
-                          color: const Color(0xFF6D3BE7),
-                        ),
-                  ),
-                  const SizedBox(height: 12),
-                  if (selectedEvents.isEmpty)
-                    AppCard(
-                      child: Column(
-                        children: <Widget>[
-                          Container(
-                            width: 62,
-                            height: 62,
-                            decoration: const BoxDecoration(
-                              color: AppColors.softPurple,
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(
-                              Icons.event_available_rounded,
-                              color: Color(0xFF6D3BE7),
-                              size: 32,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          const Text(
-                            'אין אירועים ביום הזה',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          const Text(
-                            'אפשר להוסיף אירוע חדש בעזרת כפתור הפלוס',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                        ],
-                      ),
-                    )
-                  else
-                    for (final CalendarEvent event in selectedEvents)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 10),
-                        child: AppCard(
-                          padding: EdgeInsets.zero,
-                          onTap: () =>
-                              context.push('/calendar/edit/${event.id}'),
-                          child: Row(
-                            children: <Widget>[
-                              Container(
-                                width: 6,
-                                height: 90,
-                                decoration: BoxDecoration(
-                                  color: Color(event.colorValue),
-                                  borderRadius: const BorderRadius.horizontal(
-                                    right: Radius.circular(20),
-                                  ),
+                              const SizedBox(height: 2),
+                              GridView.builder(
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                gridDelegate:
+                                    const SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: 7,
+                                  childAspectRatio: 1.2,
                                 ),
-                              ),
-                              const SizedBox(width: 14),
-                              Container(
-                                width: 48,
-                                height: 48,
-                                decoration: BoxDecoration(
-                                  color: Color(event.colorValue)
-                                      .withValues(alpha: 0.12),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: Icon(
-                                  _eventIcon(event.type),
-                                  color: Color(event.colorValue),
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: <Widget>[
-                                    Text(
-                                      event.title,
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.w900,
-                                        fontSize: 16,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 5),
-                                    Text(
-                                      '${_timeLabel(event)} · '
-                                      '${event.type.label}',
-                                      style: const TextStyle(
-                                        color: AppColors.textSecondary,
-                                      ),
-                                    ),
-                                    if (event.location.isNotEmpty) ...<Widget>[
-                                      const SizedBox(height: 3),
-                                      Row(
-                                        children: <Widget>[
-                                          const Icon(
-                                            Icons.location_on_outlined,
-                                            size: 15,
-                                            color: AppColors.textSecondary,
+                                itemCount: monthCells.length,
+                                itemBuilder: (
+                                  BuildContext context,
+                                  int index,
+                                ) {
+                                  final DateTime? day = monthCells[index];
+
+                                  if (day == null) {
+                                    return const SizedBox.shrink();
+                                  }
+
+                                  final bool selected =
+                                      _isSameDay(day, _selectedDay);
+                                  final bool today =
+                                      _isSameDay(day, DateTime.now());
+                                  final List<CalendarEvent> dayEvents =
+                                      _eventsForDay(familyEvents, day);
+
+                                  return InkWell(
+                                    borderRadius: BorderRadius.circular(14),
+                                    onTap: () {
+                                      setState(() {
+                                        _selectedDay = day;
+                                      });
+                                    },
+                                    child: Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: <Widget>[
+                                        AnimatedContainer(
+                                          duration: const Duration(
+                                            milliseconds: 160,
                                           ),
-                                          const SizedBox(width: 4),
-                                          Expanded(
-                                            child: Text(
-                                              event.location,
-                                              style: const TextStyle(
-                                                color: AppColors.textSecondary,
-                                              ),
+                                          width: 31,
+                                          height: 31,
+                                          alignment: Alignment.center,
+                                          decoration: BoxDecoration(
+                                            color: selected
+                                                ? const Color(0xFF6D3BE7)
+                                                : today
+                                                    ? AppColors.softPurple
+                                                    : Colors.transparent,
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: Text(
+                                            '${day.day}',
+                                            style: TextStyle(
+                                              fontSize: 13,
+                                              fontWeight: selected || today
+                                                  ? FontWeight.w900
+                                                  : FontWeight.w500,
+                                              color: selected
+                                                  ? Colors.white
+                                                  : today
+                                                      ? const Color(
+                                                          0xFF6D3BE7,
+                                                        )
+                                                      : AppColors.textPrimary,
                                             ),
                                           ),
-                                        ],
-                                      ),
-                                    ],
-                                  ],
-                                ),
-                              ),
-                              const Padding(
-                                padding: EdgeInsets.only(left: 14),
-                                child: Icon(
-                                  Icons.chevron_left_rounded,
-                                ),
+                                        ),
+                                        const SizedBox(height: 2),
+                                        SizedBox(
+                                          height: 5,
+                                          child: Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
+                                            children: dayEvents.take(3).map(
+                                              (CalendarEvent event) {
+                                                return Container(
+                                                  width: 4,
+                                                  height: 4,
+                                                  margin: const EdgeInsets
+                                                      .symmetric(
+                                                    horizontal: 1,
+                                                  ),
+                                                  decoration: BoxDecoration(
+                                                    color: Color(
+                                                      event.colorValue,
+                                                    ),
+                                                    shape: BoxShape.circle,
+                                                  ),
+                                                );
+                                              },
+                                            ).toList(),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                },
                               ),
                             ],
                           ),
                         ),
                       ),
-                ],
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 9, 16, 5),
+                      child: Row(
+                        children: <Widget>[
+                          Expanded(
+                            child: Text(
+                              _selectedDateTitle(),
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleMedium
+                                  ?.copyWith(
+                                    fontWeight: FontWeight.w900,
+                                    color: const Color(0xFF6D3BE7),
+                                  ),
+                            ),
+                          ),
+                          Text(
+                            '${selectedEvents.length} אירועים',
+                            style: const TextStyle(
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Expanded(
+                      child: selectedEvents.isEmpty
+                          ? const _EmptyDayView()
+                          : ListView.separated(
+                              padding: const EdgeInsets.fromLTRB(
+                                12,
+                                4,
+                                12,
+                                84,
+                              ),
+                              itemCount: selectedEvents.length,
+                              separatorBuilder: (
+                                BuildContext context,
+                                int index,
+                              ) {
+                                return const SizedBox(height: 8);
+                              },
+                              itemBuilder: (
+                                BuildContext context,
+                                int index,
+                              ) {
+                                final CalendarEvent event =
+                                    selectedEvents[index];
+
+                                return _EventCard(
+                                  event: event,
+                                  icon: _eventIcon(event.type),
+                                  timeLabel: _eventTime(event),
+                                  onTap: () {
+                                    context.push(
+                                      '/calendar/edit/${event.id}',
+                                    );
+                                  },
+                                );
+                              },
+                            ),
+                    ),
+                  ],
+                ),
               ),
+      ),
+    );
+  }
+}
+
+class _EmptyDayView extends StatelessWidget {
+  const _EmptyDayView();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Icon(
+            Icons.event_available_rounded,
+            size: 46,
+            color: Color(0xFF6D3BE7),
+          ),
+          SizedBox(height: 8),
+          Text(
+            'אין אירועים ביום הזה',
+            style: TextStyle(fontWeight: FontWeight.w800),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _EventCard extends StatelessWidget {
+  const _EventCard({
+    required this.event,
+    required this.icon,
+    required this.timeLabel,
+    required this.onTap,
+  });
+
+  final CalendarEvent event;
+  final IconData icon;
+  final String timeLabel;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final Color color = Color(event.colorValue);
+
+    return Card(
+      margin: EdgeInsets.zero,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(20),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            children: <Widget>[
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, color: color),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      event.title,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      '$timeLabel · ${event.type.label}'
+                      '${event.location.isEmpty ? '' : ' · ${event.location}'}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                width: 4,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: color,
+                  borderRadius: BorderRadius.circular(99),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

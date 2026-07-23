@@ -1,5 +1,16 @@
 # Changelog
 
+## 2.2.2
+- Rebuilt the calendar screen with a valid, maintainable widget tree.
+- Kept the full month visible without scrolling the whole screen.
+- Made only the selected-day event area independently scrollable.
+- Preserved the compact purple calendar design and quick event creation.
+
+## 2.2.1
+- Fitted the calendar month and event area into one screen.
+- Month grid stays fixed while the event list scrolls independently.
+- Reduced calendar spacing and cell size for mobile screens.
+
 ## 2.2.0
 - Redesigned the family calendar with a richer visual hierarchy.
 - Added a Today shortcut, purple selected-day treatment and improved event cards.
