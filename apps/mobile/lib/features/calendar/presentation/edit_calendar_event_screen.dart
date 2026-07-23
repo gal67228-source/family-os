@@ -49,6 +49,52 @@ class _EditCalendarEventScreenState
     0xFF0EA5E9,
   ];
 
+  IconData _typeIcon(CalendarEventType type) {
+    switch (type) {
+      case CalendarEventType.birthday:
+        return Icons.cake_rounded;
+      case CalendarEventType.appointment:
+        return Icons.medical_services_rounded;
+      case CalendarEventType.school:
+        return Icons.school_rounded;
+      case CalendarEventType.work:
+        return Icons.work_rounded;
+      case CalendarEventType.car:
+        return Icons.directions_car_rounded;
+      case CalendarEventType.shopping:
+        return Icons.shopping_cart_rounded;
+      case CalendarEventType.vacation:
+        return Icons.beach_access_rounded;
+      case CalendarEventType.family:
+        return Icons.groups_rounded;
+      case CalendarEventType.other:
+        return Icons.event_rounded;
+    }
+  }
+
+  Color _typeColor(CalendarEventType type) {
+    switch (type) {
+      case CalendarEventType.birthday:
+        return const Color(0xFFEF4444);
+      case CalendarEventType.appointment:
+        return const Color(0xFF0EA5E9);
+      case CalendarEventType.school:
+        return const Color(0xFF8B5CF6);
+      case CalendarEventType.work:
+        return const Color(0xFF1256E8);
+      case CalendarEventType.car:
+        return const Color(0xFFFF8A00);
+      case CalendarEventType.shopping:
+        return const Color(0xFF20C55A);
+      case CalendarEventType.vacation:
+        return const Color(0xFF14B8A6);
+      case CalendarEventType.family:
+        return const Color(0xFFEC4899);
+      case CalendarEventType.other:
+        return const Color(0xFF6B7280);
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -145,7 +191,24 @@ class _EditCalendarEventScreenState
       textDirection: TextDirection.rtl,
       child: Scaffold(
         appBar: AppBar(
-          title: Text(existing == null ? 'אירוע חדש' : 'עריכת אירוע'),
+          title: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              CircleAvatar(
+                radius: 16,
+                backgroundColor: _typeColor(_type).withValues(alpha: 0.14),
+                child: Icon(
+                  _typeIcon(_type),
+                  color: _typeColor(_type),
+                  size: 19,
+                ),
+              ),
+              const SizedBox(width: 9),
+              Text(
+                existing == null ? 'אירוע חדש' : 'עריכת אירוע',
+              ),
+            ],
+          ),
           actions: <Widget>[
             if (existing != null)
               IconButton(
@@ -180,258 +243,289 @@ class _EditCalendarEventScreenState
               ),
           ],
         ),
-        body: ListView(
-          padding: const EdgeInsets.all(16),
-          children: <Widget>[
-            AppCard(
-              child: Column(
-                children: <Widget>[
-                  AppTextField(
-                    controller: _title,
-                    label: 'כותרת',
-                    icon: Icons.event_rounded,
-                  ),
-                  const SizedBox(height: 14),
-                  DropdownButtonFormField<CalendarEventType>(
-                    initialValue: _type,
-                    decoration: const InputDecoration(labelText: 'סוג אירוע'),
-                    items: CalendarEventType.values
-                        .map(
-                          (CalendarEventType type) =>
-                              DropdownMenuItem<CalendarEventType>(
-                            value: type,
-                            child: Text(type.label),
-                          ),
-                        )
-                        .toList(),
-                    onChanged: (CalendarEventType? value) {
-                      if (value != null) {
-                        setState(() => _type = value);
-                      }
-                    },
-                  ),
-                  const SizedBox(height: 10),
-                  SwitchListTile(
-                    contentPadding: EdgeInsets.zero,
-                    title: const Text('אירוע לכל היום'),
-                    value: _isAllDay,
-                    onChanged: (bool value) =>
-                        setState(() => _isAllDay = value),
-                  ),
-                  ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    leading: const Icon(Icons.schedule_rounded),
-                    title: const Text('התחלה'),
-                    subtitle: Text(
-                      _isAllDay
-                          ? _dateLabel(_start)
-                          : '${_dateLabel(_start)} · ${_timeLabel(_start)}',
-                    ),
-                    onTap: () async {
-                      final DateTime? value = await _pickDateTime(
-                        _start,
-                        includeTime: !_isAllDay,
-                      );
-                      if (value != null) {
-                        setState(() {
-                          _start = value;
-                          if (_end.isBefore(_start)) {
-                            _end = _isAllDay
-                                ? _start
-                                : _start.add(const Duration(hours: 1));
-                          }
-                        });
-                      }
-                    },
-                  ),
-                  ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    leading: const Icon(Icons.schedule_send_rounded),
-                    title: const Text('סיום'),
-                    subtitle: Text(
-                      _isAllDay
-                          ? _dateLabel(_end)
-                          : '${_dateLabel(_end)} · ${_timeLabel(_end)}',
-                    ),
-                    onTap: () async {
-                      final DateTime? value = await _pickDateTime(
-                        _end,
-                        includeTime: !_isAllDay,
-                      );
-                      if (value != null) {
-                        setState(() => _end = value);
-                      }
-                    },
-                  ),
-                  AppTextField(
-                    controller: _location,
-                    label: 'מיקום',
-                    icon: Icons.location_on_outlined,
-                  ),
-                  const SizedBox(height: 14),
-                  AppTextField(
-                    controller: _notes,
-                    label: 'הערות',
-                    icon: Icons.notes_rounded,
-                  ),
-                ],
-              ),
+        resizeToAvoidBottomInset: true,
+        body: SafeArea(
+          top: false,
+          child: ListView(
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+            padding: EdgeInsets.fromLTRB(
+              16,
+              16,
+              16,
+              32 + MediaQuery.paddingOf(context).bottom,
             ),
-            const SizedBox(height: 14),
-            AppCard(
-              child: Column(
-                children: <Widget>[
-                  DropdownButtonFormField<CalendarRecurrence>(
-                    initialValue: _recurrence,
-                    decoration: const InputDecoration(labelText: 'חזרה'),
-                    items: CalendarRecurrence.values
-                        .map(
-                          (CalendarRecurrence value) =>
-                              DropdownMenuItem<CalendarRecurrence>(
-                            value: value,
-                            child: Text(value.label),
-                          ),
-                        )
-                        .toList(),
-                    onChanged: (CalendarRecurrence? value) {
-                      if (value != null) {
-                        setState(() => _recurrence = value);
-                      }
-                    },
-                  ),
-                  const SizedBox(height: 14),
-                  DropdownButtonFormField<CalendarReminder>(
-                    initialValue: _reminder,
-                    decoration: const InputDecoration(labelText: 'תזכורת'),
-                    items: CalendarReminder.values
-                        .map(
-                          (CalendarReminder value) =>
-                              DropdownMenuItem<CalendarReminder>(
-                            value: value,
-                            child: Text(value.label),
-                          ),
-                        )
-                        .toList(),
-                    onChanged: (CalendarReminder? value) {
-                      if (value != null) {
-                        setState(() => _reminder = value);
-                      }
-                    },
-                  ),
-                  const SizedBox(height: 14),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: Text(
-                      'צבע',
-                      style: Theme.of(context).textTheme.titleSmall,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 12,
-                    children: _colors
-                        .map(
-                          (int color) => InkWell(
-                            onTap: () => setState(() => _colorValue = color),
-                            borderRadius: BorderRadius.circular(99),
-                            child: CircleAvatar(
-                              radius: _colorValue == color ? 18 : 15,
-                              backgroundColor: Color(color),
-                              child: _colorValue == color
-                                  ? const Icon(
-                                      Icons.check_rounded,
-                                      color: Colors.white,
-                                      size: 18,
-                                    )
-                                  : null,
-                            ),
-                          ),
-                        )
-                        .toList(),
-                  ),
-                ],
-              ),
-            ),
-            if (members.isNotEmpty) ...<Widget>[
-              const SizedBox(height: 14),
+            children: <Widget>[
               AppCard(
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
-                    Text(
-                      'משתתפים',
-                      style: Theme.of(context).textTheme.titleMedium,
+                    AppTextField(
+                      controller: _title,
+                      label: 'כותרת',
+                      icon: Icons.event_rounded,
                     ),
-                    const SizedBox(height: 8),
-                    for (final FamilyMember member in members)
-                      CheckboxListTile(
-                        contentPadding: EdgeInsets.zero,
-                        title: Text(member.name),
-                        value: _participants.contains(member.id),
-                        onChanged: (bool? value) {
+                    const SizedBox(height: 14),
+                    DropdownButtonFormField<CalendarEventType>(
+                      initialValue: _type,
+                      decoration: const InputDecoration(labelText: 'סוג אירוע'),
+                      items: CalendarEventType.values
+                          .map(
+                            (CalendarEventType type) =>
+                                DropdownMenuItem<CalendarEventType>(
+                              value: type,
+                              child: Row(
+                                children: <Widget>[
+                                  CircleAvatar(
+                                    radius: 14,
+                                    backgroundColor: _typeColor(type)
+                                        .withValues(alpha: 0.14),
+                                    child: Icon(
+                                      _typeIcon(type),
+                                      size: 16,
+                                      color: _typeColor(type),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Text(type.label),
+                                ],
+                              ),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (CalendarEventType? value) {
+                        if (value != null) {
+                          setState(() => _type = value);
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 10),
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text('אירוע לכל היום'),
+                      value: _isAllDay,
+                      onChanged: (bool value) =>
+                          setState(() => _isAllDay = value),
+                    ),
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: const Icon(Icons.schedule_rounded),
+                      title: const Text('התחלה'),
+                      subtitle: Text(
+                        _isAllDay
+                            ? _dateLabel(_start)
+                            : '${_dateLabel(_start)} · ${_timeLabel(_start)}',
+                      ),
+                      onTap: () async {
+                        final DateTime? value = await _pickDateTime(
+                          _start,
+                          includeTime: !_isAllDay,
+                        );
+                        if (value != null) {
                           setState(() {
-                            if (value == true) {
-                              _participants.add(member.id);
-                            } else {
-                              _participants.remove(member.id);
+                            _start = value;
+                            if (_end.isBefore(_start)) {
+                              _end = _isAllDay
+                                  ? _start
+                                  : _start.add(const Duration(hours: 1));
                             }
                           });
-                        },
+                        }
+                      },
+                    ),
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: const Icon(Icons.schedule_send_rounded),
+                      title: const Text('סיום'),
+                      subtitle: Text(
+                        _isAllDay
+                            ? _dateLabel(_end)
+                            : '${_dateLabel(_end)} · ${_timeLabel(_end)}',
                       ),
+                      onTap: () async {
+                        final DateTime? value = await _pickDateTime(
+                          _end,
+                          includeTime: !_isAllDay,
+                        );
+                        if (value != null) {
+                          setState(() => _end = value);
+                        }
+                      },
+                    ),
+                    AppTextField(
+                      controller: _location,
+                      label: 'מיקום',
+                      icon: Icons.location_on_outlined,
+                    ),
+                    const SizedBox(height: 14),
+                    AppTextField(
+                      controller: _notes,
+                      label: 'הערות',
+                      icon: Icons.notes_rounded,
+                    ),
                   ],
                 ),
               ),
-            ],
-            const SizedBox(height: 18),
-            AppPrimaryButton(
-              label: existing == null ? 'צור אירוע' : 'שמור שינויים',
-              icon: Icons.save_rounded,
-              onPressed: family == null
-                  ? null
-                  : () async {
-                      final bool success;
-                      if (existing == null) {
-                        success = await ref
-                            .read(calendarControllerProvider.notifier)
-                            .addEvent(
-                              familyId: family.id,
-                              title: _title.text,
-                              type: _type,
-                              start: _start,
-                              end: _end,
-                              isAllDay: _isAllDay,
-                              location: _location.text,
-                              notes: _notes.text,
-                              participantIds: _participants.toList(),
-                              colorValue: _colorValue,
-                              recurrence: _recurrence,
-                              reminder: _reminder,
-                            );
-                      } else {
-                        success = await ref
-                            .read(calendarControllerProvider.notifier)
-                            .updateEvent(
-                              existing.copyWith(
-                                title: _title.text.trim(),
+              const SizedBox(height: 14),
+              AppCard(
+                child: Column(
+                  children: <Widget>[
+                    DropdownButtonFormField<CalendarRecurrence>(
+                      initialValue: _recurrence,
+                      decoration: const InputDecoration(
+                        labelText: 'חזרה',
+                        prefixIcon: Icon(Icons.repeat_rounded),
+                      ),
+                      items: CalendarRecurrence.values
+                          .map(
+                            (CalendarRecurrence value) =>
+                                DropdownMenuItem<CalendarRecurrence>(
+                              value: value,
+                              child: Text(value.label),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (CalendarRecurrence? value) {
+                        if (value != null) {
+                          setState(() => _recurrence = value);
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 14),
+                    DropdownButtonFormField<CalendarReminder>(
+                      initialValue: _reminder,
+                      decoration: const InputDecoration(
+                        labelText: 'תזכורת',
+                        prefixIcon: Icon(Icons.notifications_active_rounded),
+                      ),
+                      items: CalendarReminder.values
+                          .map(
+                            (CalendarReminder value) =>
+                                DropdownMenuItem<CalendarReminder>(
+                              value: value,
+                              child: Text(value.label),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (CalendarReminder? value) {
+                        if (value != null) {
+                          setState(() => _reminder = value);
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 14),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: Text(
+                        'צבע',
+                        style: Theme.of(context).textTheme.titleSmall,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 12,
+                      children: _colors
+                          .map(
+                            (int color) => InkWell(
+                              onTap: () => setState(() => _colorValue = color),
+                              borderRadius: BorderRadius.circular(99),
+                              child: CircleAvatar(
+                                radius: _colorValue == color ? 18 : 15,
+                                backgroundColor: Color(color),
+                                child: _colorValue == color
+                                    ? const Icon(
+                                        Icons.check_rounded,
+                                        color: Colors.white,
+                                        size: 18,
+                                      )
+                                    : null,
+                              ),
+                            ),
+                          )
+                          .toList(),
+                    ),
+                  ],
+                ),
+              ),
+              if (members.isNotEmpty) ...<Widget>[
+                const SizedBox(height: 14),
+                AppCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Text(
+                        'משתתפים',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      const SizedBox(height: 8),
+                      for (final FamilyMember member in members)
+                        CheckboxListTile(
+                          contentPadding: EdgeInsets.zero,
+                          title: Text(member.name),
+                          value: _participants.contains(member.id),
+                          onChanged: (bool? value) {
+                            setState(() {
+                              if (value == true) {
+                                _participants.add(member.id);
+                              } else {
+                                _participants.remove(member.id);
+                              }
+                            });
+                          },
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+              const SizedBox(height: 18),
+              AppPrimaryButton(
+                label: existing == null ? 'צור אירוע' : 'שמור שינויים',
+                icon: Icons.save_rounded,
+                onPressed: family == null
+                    ? null
+                    : () async {
+                        final bool success;
+                        if (existing == null) {
+                          success = await ref
+                              .read(calendarControllerProvider.notifier)
+                              .addEvent(
+                                familyId: family.id,
+                                title: _title.text,
                                 type: _type,
                                 start: _start,
                                 end: _end,
                                 isAllDay: _isAllDay,
-                                location: _location.text.trim(),
-                                notes: _notes.text.trim(),
+                                location: _location.text,
+                                notes: _notes.text,
                                 participantIds: _participants.toList(),
                                 colorValue: _colorValue,
                                 recurrence: _recurrence,
                                 reminder: _reminder,
-                              ),
-                            );
-                      }
-                      if (success && context.mounted) {
-                        context.go('/calendar');
-                      }
-                    },
-            ),
-          ],
+                              );
+                        } else {
+                          success = await ref
+                              .read(calendarControllerProvider.notifier)
+                              .updateEvent(
+                                existing.copyWith(
+                                  title: _title.text.trim(),
+                                  type: _type,
+                                  start: _start,
+                                  end: _end,
+                                  isAllDay: _isAllDay,
+                                  location: _location.text.trim(),
+                                  notes: _notes.text.trim(),
+                                  participantIds: _participants.toList(),
+                                  colorValue: _colorValue,
+                                  recurrence: _recurrence,
+                                  reminder: _reminder,
+                                ),
+                              );
+                        }
+                        if (success && context.mounted) {
+                          context.go('/calendar');
+                        }
+                      },
+              ),
+            ],
+          ),
         ),
       ),
     );

@@ -1,7 +1,7 @@
 name: family_os
 description: Family OS mobile application.
 publish_to: none
-version: 2.2.2+60
+version: 2.2.3+61
 
 environment:
   sdk: ">=3.5.0 <4.0.0"

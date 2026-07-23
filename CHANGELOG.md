@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.2.3
+- Enabled immersive sticky mode to hide the phone status and navigation bars.
+- Added safe bottom spacing so the event save button remains accessible.
+- Added colorful icons for every calendar activity type.
+- Added a colorful calendar icon to calendar headers.
+- Added icons to recurrence and reminder fields.
+
 ## 2.2.2
 - Rebuilt the calendar screen with a valid, maintainable widget tree.
 - Kept the full month visible without scrolling the whole screen.

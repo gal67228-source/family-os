@@ -216,9 +216,24 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
       child: Scaffold(
         backgroundColor: AppColors.canvas,
         appBar: AppBar(
-          title: const Text(
-            'יומן משפחתי',
-            style: TextStyle(fontWeight: FontWeight.w800),
+          title: const Row(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              CircleAvatar(
+                radius: 17,
+                backgroundColor: AppColors.softPurple,
+                child: Icon(
+                  Icons.calendar_month_rounded,
+                  color: Color(0xFF6D3BE7),
+                  size: 20,
+                ),
+              ),
+              SizedBox(width: 10),
+              Text(
+                'יומן משפחתי',
+                style: TextStyle(fontWeight: FontWeight.w800),
+              ),
+            ],
           ),
           actions: <Widget>[
             TextButton(
