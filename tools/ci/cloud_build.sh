@@ -60,15 +60,23 @@ from pathlib import Path
 manifest = Path("android/app/src/main/AndroidManifest.xml")
 text = manifest.read_text(encoding="utf-8")
 
-permissions = """<uses-permission android:name="android.permission.RECORD_AUDIO"/>
-    <uses-permission android:name="android.permission.INTERNET"/>
-    <uses-permission android:name="android.permission.BLUETOOTH"/>
-    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN"/>
-    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT"/>
-    """
+permissions = """    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.BLUETOOTH" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+"""
 
 if "android.permission.RECORD_AUDIO" not in text:
-    text = text.replace("<manifest xmlns:android=", permissions + "<manifest xmlns:android=")
+    manifest_close = text.find(">")
+    if manifest_close == -1:
+        raise RuntimeError("AndroidManifest.xml has no opening manifest tag.")
+    text = (
+        text[: manifest_close + 1]
+        + "\n"
+        + permissions
+        + text[manifest_close + 1 :]
+    )
 
 queries = """    <queries>
         <intent>
@@ -78,7 +86,10 @@ queries = """    <queries>
 """
 
 if "android.speech.RecognitionService" not in text:
-    text = text.replace("    <application", queries + "    <application")
+    application_index = text.find("    <application")
+    if application_index == -1:
+        raise RuntimeError("AndroidManifest.xml has no application tag.")
+    text = text[:application_index] + queries + text[application_index:]
 
 manifest.write_text(text, encoding="utf-8")
 
