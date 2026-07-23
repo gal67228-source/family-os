@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.7.0
+- Added persistent family shopping lists.
+- Added automatic department classification and sorting.
+- Added supermarket shopping mode with progress tracking.
+- Added finish-shopping cleanup for checked products.
+- Added recurring products with weekly, biweekly and monthly cadence.
+- Connected shopping counts to the dashboard.
+- Added shopping controller tests.
+
 ## 1.6.1
 - Removed the undeclared `intl` dependency from task screens.
 - Added local `dd/MM/yyyy` date formatting.

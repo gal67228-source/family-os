@@ -11,6 +11,9 @@ import '../features/families/presentation/join_family_screen.dart';
 import '../features/families/presentation/manage_family_screen.dart';
 import '../features/families/presentation/switch_family_screen.dart';
 import '../features/more/presentation/more_screen.dart';
+import '../features/shopping/presentation/add_shopping_item_screen.dart';
+import '../features/shopping/presentation/recurring_products_screen.dart';
+import '../features/shopping/presentation/store_mode_screen.dart';
 import '../features/shopping/presentation/shopping_screen.dart';
 import '../features/splash/presentation/splash_screen.dart';
 import '../features/tasks/presentation/create_task_screen.dart';
@@ -88,6 +91,24 @@ final GoRouter appRouter = GoRouter(
       path: '/tasks/new',
       builder: (BuildContext context, GoRouterState state) {
         return const CreateTaskScreen();
+      },
+    ),
+    GoRoute(
+      path: '/shopping/add',
+      builder: (BuildContext context, GoRouterState state) {
+        return const AddShoppingItemScreen();
+      },
+    ),
+    GoRoute(
+      path: '/shopping/store',
+      builder: (BuildContext context, GoRouterState state) {
+        return const StoreModeScreen();
+      },
+    ),
+    GoRoute(
+      path: '/shopping/recurring',
+      builder: (BuildContext context, GoRouterState state) {
+        return const RecurringProductsScreen();
       },
     ),
     StatefulShellRoute.indexedStack(

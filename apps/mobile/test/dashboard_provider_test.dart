@@ -4,6 +4,10 @@ import 'package:family_os/features/families/data/family_repository.dart';
 import 'package:family_os/features/families/domain/family_icon.dart';
 import 'package:family_os/features/families/domain/family_member.dart';
 import 'package:family_os/features/families/domain/family_workspace.dart';
+import 'package:family_os/features/shopping/application/shopping_controller.dart';
+import 'package:family_os/features/shopping/data/shopping_repository.dart';
+import 'package:family_os/features/shopping/domain/recurring_product.dart';
+import 'package:family_os/features/shopping/domain/shopping_item.dart';
 import 'package:family_os/features/tasks/application/task_controller.dart';
 import 'package:family_os/features/tasks/data/task_repository.dart';
 import 'package:family_os/features/tasks/domain/family_task.dart';
@@ -48,6 +52,23 @@ class _MemoryFamilyRepository implements FamilyRepository {
   Future<void> saveFamilies(List<FamilyWorkspace> families) async {}
 }
 
+class _MemoryShoppingRepository implements ShoppingRepository {
+  @override
+  Future<List<ShoppingItem>> loadItems() async => <ShoppingItem>[];
+
+  @override
+  Future<List<RecurringProduct>> loadRecurringProducts() async =>
+      <RecurringProduct>[];
+
+  @override
+  Future<void> saveItems(List<ShoppingItem> items) async {}
+
+  @override
+  Future<void> saveRecurringProducts(
+    List<RecurringProduct> products,
+  ) async {}
+}
+
 class _MemoryTaskRepository implements TaskRepository {
   @override
   Future<List<FamilyTask>> loadTasks() async => <FamilyTask>[];
@@ -66,12 +87,16 @@ void main() {
         taskRepositoryProvider.overrideWithValue(
           _MemoryTaskRepository(),
         ),
+        shoppingRepositoryProvider.overrideWithValue(
+          _MemoryShoppingRepository(),
+        ),
       ],
     );
     addTearDown(container.dispose);
 
     await container.read(familyControllerProvider.notifier).load();
     await container.read(taskControllerProvider.notifier).load();
+    await container.read(shoppingControllerProvider.notifier).load();
 
     final summary = container.read(dashboardSummaryProvider);
     expect(summary.familyMembers, 2);
