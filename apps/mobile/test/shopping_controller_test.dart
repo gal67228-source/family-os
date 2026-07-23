@@ -84,7 +84,7 @@ void main() {
     expect(controller.state.items, isEmpty);
   });
 
-  test('automatic recurring products are added when due', () async {
+  test('automatic recurring products are added immediately', () async {
     final MemoryShoppingRepository repository = MemoryShoppingRepository();
     final ShoppingController controller = ShoppingController(repository);
     await controller.load();
@@ -99,9 +99,9 @@ void main() {
       autoAdd: true,
     );
 
-    await controller.ensureFamilyReady('f1');
     expect(controller.state.items, hasLength(1));
     expect(controller.state.items.single.name, 'חלב');
+    expect(controller.state.recurringProducts.single.lastAddedAt, isNotNull);
   });
 
   test('merges duplicate numeric quantities inside one list', () async {

@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.9.2
+- Newly created automatic recurring products are added immediately to their target list.
+- The initial addition time is saved so the product is not duplicated on the next screen opening.
+- Updated recurring-product tests.
+
 ## 1.9.1
 - Added the missing shopping-list repository methods to the dashboard test.
 - Removed the analyzer warning caused by the incomplete test fixture.

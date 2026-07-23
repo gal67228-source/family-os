@@ -306,20 +306,39 @@ class ShoppingController extends StateNotifier<ShoppingState> {
     String? listId,
     bool autoAdd = true,
   }) async {
-    if (name.trim().length < 2) return false;
+    final String normalizedName = name.trim();
+    if (normalizedName.length < 2) return false;
+
     final String target = listId ?? state.selectedListId ?? '';
     if (target.isEmpty) return false;
+
+    DateTime? addedAt;
+    if (autoAdd) {
+      final bool added = await addItem(
+        familyId: familyId,
+        listId: target,
+        name: normalizedName,
+        quantity: quantity.trim(),
+        note: '',
+        category: category,
+      );
+      if (added) {
+        addedAt = DateTime.now();
+      }
+    }
+
     final RecurringProduct product = RecurringProduct(
       id: DateTime.now().microsecondsSinceEpoch.toString(),
       familyId: familyId,
       listId: target,
-      name: name.trim(),
+      name: normalizedName,
       quantity: quantity.trim(),
       category: category,
       cadence: cadence,
       autoAdd: autoAdd,
-      lastAddedAt: null,
+      lastAddedAt: addedAt,
     );
+
     await _saveRecurring(<RecurringProduct>[
       ...state.recurringProducts,
       product,
