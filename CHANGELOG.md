@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.8.0
+- Added dictionary-based segmentation for consecutive spoken products.
+- Products can now be recognized without commas or Hebrew conjunctions.
+- Added longest-match handling for multi-word products.
+- Added numeric and Hebrew-word quantities.
+- Unknown consecutive words are preserved as separate products.
+- Added parser coverage for natural Hebrew shopping dictation.
+
 ## 1.7.9
 - Improved voice shopping parser to support consecutive spoken products without commas or conjunctions.
 
