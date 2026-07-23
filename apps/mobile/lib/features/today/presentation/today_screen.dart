@@ -10,6 +10,8 @@ import '../../dashboard/domain/dashboard_summary.dart';
 import '../../dashboard/presentation/dashboard_stat_card.dart';
 import '../../families/application/family_controller.dart';
 import '../../families/domain/family_workspace.dart';
+import '../../tasks/application/task_controller.dart';
+import '../../tasks/domain/family_task.dart';
 
 class TodayScreen extends ConsumerWidget {
   const TodayScreen({super.key});
@@ -19,6 +21,11 @@ class TodayScreen extends ConsumerWidget {
     final FamilyState familyState = ref.watch(familyControllerProvider);
     final DashboardSummary summary = ref.watch(dashboardSummaryProvider);
     final FamilyWorkspace? family = familyState.activeFamily;
+    final List<FamilyTask> upcomingTasks = ref
+        .watch(activeFamilyTasksProvider)
+        .where((FamilyTask task) => !task.isCompleted)
+        .take(3)
+        .toList();
 
     return Directionality(
       textDirection: TextDirection.rtl,
@@ -111,6 +118,87 @@ class TodayScreen extends ConsumerWidget {
                         ],
                       ),
                       const SizedBox(height: 22),
+                      Row(
+                        children: <Widget>[
+                          Expanded(
+                            child: Text(
+                              'משימות קרובות',
+                              style: Theme.of(context).textTheme.titleLarge,
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: () => context.go('/tasks'),
+                            child: const Text('הצג הכול'),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      if (upcomingTasks.isEmpty)
+                        const AppCard(
+                          child: Row(
+                            children: <Widget>[
+                              Icon(
+                                Icons.task_alt_rounded,
+                                color: AppColors.secondary,
+                              ),
+                              SizedBox(width: 10),
+                              Text('אין משימות פתוחות'),
+                            ],
+                          ),
+                        )
+                      else
+                        AppCard(
+                          padding: EdgeInsets.zero,
+                          child: Column(
+                            children: <Widget>[
+                              for (int index = 0;
+                                  index < upcomingTasks.length;
+                                  index++) ...<Widget>[
+                                ListTile(
+                                  leading: IconButton(
+                                    tooltip: 'סמן כהושלם',
+                                    onPressed: () => ref
+                                        .read(
+                                          taskControllerProvider.notifier,
+                                        )
+                                        .toggleCompleted(
+                                          upcomingTasks[index].id,
+                                        ),
+                                    icon: Icon(
+                                      Icons.circle_outlined,
+                                      color: upcomingTasks[index].isOverdue
+                                          ? AppColors.error
+                                          : AppColors.primary,
+                                    ),
+                                  ),
+                                  title: Text(
+                                    upcomingTasks[index].title,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                  subtitle: Text(
+                                    '${upcomingTasks[index].dueDate.day}/'
+                                    '${upcomingTasks[index].dueDate.month}'
+                                    '${upcomingTasks[index].assigneeName.isEmpty ? '' : ' · ${upcomingTasks[index].assigneeName}'}',
+                                    style: TextStyle(
+                                      color: upcomingTasks[index].isOverdue
+                                          ? AppColors.error
+                                          : AppColors.textSecondary,
+                                    ),
+                                  ),
+                                  trailing: const Icon(
+                                    Icons.chevron_left_rounded,
+                                  ),
+                                  onTap: () => context.push('/tasks/new'),
+                                ),
+                                if (index < upcomingTasks.length - 1)
+                                  const Divider(height: 1),
+                              ],
+                            ],
+                          ),
+                        ),
+                      const SizedBox(height: 22),
                       Text(
                         'פעולות מהירות',
                         style: Theme.of(context).textTheme.titleLarge,
@@ -130,7 +218,7 @@ class TodayScreen extends ConsumerWidget {
                               ),
                               title: const Text('הוסף משימה'),
                               subtitle: const Text(
-                                'יצירת משימות תופעל בצעד הבא',
+                                'צור משימה חדשה למשפחה',
                               ),
                               trailing: const Icon(Icons.chevron_left_rounded),
                               onTap: () => context.go('/tasks'),

@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.4.1
+- Added dated tasks directly to Month, Week, Day and Agenda calendar views.
+- Added blue task indicators to calendar days.
+- Tasks can be completed directly from the calendar.
+- Added an Upcoming Tasks section to the dashboard.
+- Fixed the dashboard quick action so it opens task creation directly.
+
 ## 2.4.0
 - Added task assignee IDs, due times and recurring schedules.
 - Added Open, Mine, Overdue and Completed task filters.

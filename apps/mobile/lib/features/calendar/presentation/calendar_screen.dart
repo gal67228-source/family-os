@@ -371,6 +371,36 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     }
   }
 
+  bool _taskOccursOn(FamilyTask task, DateTime day) {
+    return task.dueDate.year == day.year &&
+        task.dueDate.month == day.month &&
+        task.dueDate.day == day.day;
+  }
+
+  List<FamilyTask> _tasksForDay(
+    List<FamilyTask> tasks,
+    DateTime day,
+  ) {
+    final List<FamilyTask> result = tasks
+        .where(
+          (FamilyTask task) => !task.isCompleted && _taskOccursOn(task, day),
+        )
+        .toList()
+      ..sort(
+        (FamilyTask first, FamilyTask second) =>
+            first.dueDate.compareTo(second.dueDate),
+      );
+    return result;
+  }
+
+  String _taskTimeLabel(FamilyTask task) {
+    if (!task.hasDueTime) {
+      return 'ללא שעה';
+    }
+    return '${task.dueDate.hour.toString().padLeft(2, '0')}:'
+        '${task.dueDate.minute.toString().padLeft(2, '0')}';
+  }
+
   String _timeLabel(CalendarEvent event) {
     if (event.isAllDay) {
       return 'כל היום';
@@ -570,7 +600,9 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                             weekdayNames: _weekdayNames,
                             monthCells: _monthCells(),
                             events: events,
+                            tasks: calendarTasks,
                             eventsForDay: _eventsForDay,
+                            tasksForDay: _tasksForDay,
                             onSelectDay: (DateTime value) {
                               setState(() => _selectedDay = value);
                             },
@@ -583,7 +615,9 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                             days: _weekDays(),
                             selectedDay: _selectedDay,
                             events: events,
+                            tasks: calendarTasks,
                             eventsForDay: _eventsForDay,
+                            tasksForDay: _tasksForDay,
                             onSelectDay: (DateTime value) {
                               setState(() => _selectedDay = value);
                             },
@@ -596,12 +630,23 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                               events,
                               _selectedDay,
                             ),
+                            tasks: _tasksForDay(
+                              calendarTasks,
+                              _selectedDay,
+                            ),
                             eventIcon: _eventIcon,
+                            taskTimeLabel: _taskTimeLabel,
                             timeLabel: _timeLabel,
                           ),
                         _CalendarViewMode.agenda => _AgendaView(
                             events: events,
+                            tasks: calendarTasks
+                                .where(
+                                  (FamilyTask task) => !task.isCompleted,
+                                )
+                                .toList(),
                             eventIcon: _eventIcon,
+                            taskTimeLabel: _taskTimeLabel,
                             timeLabel: _timeLabel,
                           ),
                       },
@@ -622,7 +667,9 @@ class _MonthView extends StatelessWidget {
     required this.weekdayNames,
     required this.monthCells,
     required this.events,
+    required this.tasks,
     required this.eventsForDay,
+    required this.tasksForDay,
     required this.onSelectDay,
     required this.onChangeMonth,
     required this.onToday,
@@ -636,10 +683,15 @@ class _MonthView extends StatelessWidget {
   final List<String> weekdayNames;
   final List<DateTime?> monthCells;
   final List<CalendarEvent> events;
+  final List<FamilyTask> tasks;
   final List<CalendarEvent> Function(
     List<CalendarEvent>,
     DateTime,
   ) eventsForDay;
+  final List<FamilyTask> Function(
+    List<FamilyTask>,
+    DateTime,
+  ) tasksForDay;
   final ValueChanged<DateTime> onSelectDay;
   final ValueChanged<int> onChangeMonth;
   final VoidCallback onToday;
@@ -656,6 +708,7 @@ class _MonthView extends StatelessWidget {
   Widget build(BuildContext context) {
     final List<CalendarEvent> selectedEvents =
         eventsForDay(events, selectedDay);
+    final List<FamilyTask> selectedTasks = tasksForDay(tasks, selectedDay);
 
     return Column(
       children: <Widget>[
@@ -736,6 +789,7 @@ class _MonthView extends StatelessWidget {
                       final bool today = _sameDay(day, DateTime.now());
                       final List<CalendarEvent> dayEvents =
                           eventsForDay(events, day);
+                      final List<FamilyTask> dayTasks = tasksForDay(tasks, day);
 
                       return InkWell(
                         borderRadius: BorderRadius.circular(14),
@@ -774,21 +828,35 @@ class _MonthView extends StatelessWidget {
                               height: 5,
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
-                                children: dayEvents.take(3).map(
-                                  (CalendarEvent event) {
-                                    return Container(
-                                      width: 4,
-                                      height: 4,
+                                children: <Widget>[
+                                  ...dayEvents.take(2).map(
+                                    (CalendarEvent event) {
+                                      return Container(
+                                        width: 4,
+                                        height: 4,
+                                        margin: const EdgeInsets.symmetric(
+                                          horizontal: 1,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: Color(event.colorValue),
+                                          shape: BoxShape.circle,
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                  if (dayTasks.isNotEmpty)
+                                    Container(
+                                      width: 5,
+                                      height: 5,
                                       margin: const EdgeInsets.symmetric(
                                         horizontal: 1,
                                       ),
-                                      decoration: BoxDecoration(
-                                        color: Color(event.colorValue),
+                                      decoration: const BoxDecoration(
+                                        color: AppColors.primary,
                                         shape: BoxShape.circle,
                                       ),
-                                    );
-                                  },
-                                ).toList(),
+                                    ),
+                                ],
                               ),
                             ),
                           ],
@@ -816,7 +884,8 @@ class _MonthView extends StatelessWidget {
                 ),
               ),
               Text(
-                '${selectedEvents.length} אירועים',
+                '${selectedEvents.length} אירועים · '
+                '${selectedTasks.length} משימות',
                 style: const TextStyle(
                   color: AppColors.textSecondary,
                 ),
@@ -825,10 +894,11 @@ class _MonthView extends StatelessWidget {
           ),
         ),
         Expanded(
-          child: _EventList(
+          child: _CalendarItemsList(
             events: selectedEvents,
+            tasks: selectedTasks,
             eventIcon: eventIcon,
-            timeLabel: timeLabel,
+            eventTimeLabel: timeLabel,
           ),
         ),
       ],
@@ -841,7 +911,9 @@ class _WeekView extends StatelessWidget {
     required this.days,
     required this.selectedDay,
     required this.events,
+    required this.tasks,
     required this.eventsForDay,
+    required this.tasksForDay,
     required this.onSelectDay,
     required this.eventIcon,
     required this.timeLabel,
@@ -850,10 +922,15 @@ class _WeekView extends StatelessWidget {
   final List<DateTime> days;
   final DateTime selectedDay;
   final List<CalendarEvent> events;
+  final List<FamilyTask> tasks;
   final List<CalendarEvent> Function(
     List<CalendarEvent>,
     DateTime,
   ) eventsForDay;
+  final List<FamilyTask> Function(
+    List<FamilyTask>,
+    DateTime,
+  ) tasksForDay;
   final ValueChanged<DateTime> onSelectDay;
   final IconData Function(CalendarEventType) eventIcon;
   final String Function(CalendarEvent) timeLabel;
@@ -878,7 +955,8 @@ class _WeekView extends StatelessWidget {
             itemBuilder: (BuildContext context, int index) {
               final DateTime day = days[index];
               final bool selected = _sameDay(day, selectedDay);
-              final int count = eventsForDay(events, day).length;
+              final int count = eventsForDay(events, day).length +
+                  tasksForDay(tasks, day).length;
 
               return ChoiceChip(
                 selected: selected,
@@ -904,10 +982,11 @@ class _WeekView extends StatelessWidget {
           ),
         ),
         Expanded(
-          child: _EventList(
+          child: _CalendarItemsList(
             events: eventsForDay(events, selectedDay),
+            tasks: tasksForDay(tasks, selectedDay),
             eventIcon: eventIcon,
-            timeLabel: timeLabel,
+            eventTimeLabel: timeLabel,
           ),
         ),
       ],
@@ -919,13 +998,17 @@ class _DayView extends StatelessWidget {
   const _DayView({
     required this.day,
     required this.events,
+    required this.tasks,
     required this.eventIcon,
+    required this.taskTimeLabel,
     required this.timeLabel,
   });
 
   final DateTime day;
   final List<CalendarEvent> events;
+  final List<FamilyTask> tasks;
   final IconData Function(CalendarEventType) eventIcon;
+  final String Function(FamilyTask) taskTimeLabel;
   final String Function(CalendarEvent) timeLabel;
 
   @override
@@ -955,10 +1038,12 @@ class _DayView extends StatelessWidget {
           ),
         ),
         Expanded(
-          child: _EventList(
+          child: _CalendarItemsList(
             events: events,
+            tasks: tasks,
             eventIcon: eventIcon,
-            timeLabel: timeLabel,
+            eventTimeLabel: timeLabel,
+            taskTimeLabel: taskTimeLabel,
           ),
         ),
       ],
@@ -969,41 +1054,51 @@ class _DayView extends StatelessWidget {
 class _AgendaView extends StatelessWidget {
   const _AgendaView({
     required this.events,
+    required this.tasks,
     required this.eventIcon,
+    required this.taskTimeLabel,
     required this.timeLabel,
   });
 
   final List<CalendarEvent> events;
+  final List<FamilyTask> tasks;
   final IconData Function(CalendarEventType) eventIcon;
+  final String Function(FamilyTask) taskTimeLabel;
   final String Function(CalendarEvent) timeLabel;
 
   @override
   Widget build(BuildContext context) {
-    return _EventList(
+    return _CalendarItemsList(
       events: events,
+      tasks: tasks,
       eventIcon: eventIcon,
-      timeLabel: timeLabel,
+      eventTimeLabel: timeLabel,
+      taskTimeLabel: taskTimeLabel,
       showDate: true,
     );
   }
 }
 
-class _EventList extends StatelessWidget {
-  const _EventList({
+class _CalendarItemsList extends ConsumerWidget {
+  const _CalendarItemsList({
     required this.events,
+    required this.tasks,
     required this.eventIcon,
-    required this.timeLabel,
+    required this.eventTimeLabel,
+    this.taskTimeLabel,
     this.showDate = false,
   });
 
   final List<CalendarEvent> events;
+  final List<FamilyTask> tasks;
   final IconData Function(CalendarEventType) eventIcon;
-  final String Function(CalendarEvent) timeLabel;
+  final String Function(CalendarEvent) eventTimeLabel;
+  final String Function(FamilyTask)? taskTimeLabel;
   final bool showDate;
 
   @override
-  Widget build(BuildContext context) {
-    if (events.isEmpty) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    if (events.isEmpty && tasks.isEmpty) {
       return const Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -1015,7 +1110,7 @@ class _EventList extends StatelessWidget {
             ),
             SizedBox(height: 8),
             Text(
-              'אין אירועים להצגה',
+              'אין אירועים או משימות להצגה',
               style: TextStyle(fontWeight: FontWeight.w800),
             ),
           ],
@@ -1023,21 +1118,90 @@ class _EventList extends StatelessWidget {
       );
     }
 
+    final List<Object> items = <Object>[...events, ...tasks]
+      ..sort((Object first, Object second) {
+        final DateTime firstDate = first is CalendarEvent
+            ? first.start
+            : (first as FamilyTask).dueDate;
+        final DateTime secondDate = second is CalendarEvent
+            ? second.start
+            : (second as FamilyTask).dueDate;
+        return firstDate.compareTo(secondDate);
+      });
+
     return ListView.separated(
-      padding: const EdgeInsets.fromLTRB(12, 4, 12, 84),
-      itemCount: events.length,
+      padding: const EdgeInsets.fromLTRB(12, 4, 12, 100),
+      itemCount: items.length,
       separatorBuilder: (_, __) => const SizedBox(height: 8),
       itemBuilder: (BuildContext context, int index) {
-        final CalendarEvent event = events[index];
+        final Object item = items[index];
+
+        if (item is FamilyTask) {
+          final String time = taskTimeLabel?.call(item) ??
+              (item.hasDueTime
+                  ? '${item.dueDate.hour.toString().padLeft(2, '0')}:'
+                      '${item.dueDate.minute.toString().padLeft(2, '0')}'
+                  : 'ללא שעה');
+
+          return Card(
+            margin: EdgeInsets.zero,
+            child: ListTile(
+              leading: IconButton(
+                tooltip: 'סמן כהושלם',
+                onPressed: () => ref
+                    .read(taskControllerProvider.notifier)
+                    .toggleCompleted(item.id),
+                icon: const Icon(
+                  Icons.circle_outlined,
+                  color: AppColors.primary,
+                ),
+              ),
+              title: Row(
+                children: <Widget>[
+                  const Icon(
+                    Icons.task_alt_rounded,
+                    size: 18,
+                    color: AppColors.primary,
+                  ),
+                  const SizedBox(width: 7),
+                  Expanded(
+                    child: Text(
+                      item.title,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              subtitle: Text(
+                '${showDate ? '${item.dueDate.day}/${item.dueDate.month} · ' : ''}'
+                '$time · משימה'
+                '${item.assigneeName.isEmpty ? '' : ' · ${item.assigneeName}'}',
+                style: const TextStyle(
+                  color: AppColors.textSecondary,
+                ),
+              ),
+              trailing: Container(
+                width: 4,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: item.isOverdue ? AppColors.error : AppColors.primary,
+                  borderRadius: BorderRadius.circular(99),
+                ),
+              ),
+            ),
+          );
+        }
+
+        final CalendarEvent event = item as CalendarEvent;
         final Color color = Color(event.colorValue);
 
         return Card(
           margin: EdgeInsets.zero,
           child: InkWell(
             borderRadius: BorderRadius.circular(20),
-            onTap: () {
-              context.push('/calendar/edit/${event.id}');
-            },
+            onTap: () => context.push('/calendar/edit/${event.id}'),
             child: Padding(
               padding: const EdgeInsets.all(12),
               child: Row(
@@ -1049,39 +1213,25 @@ class _EventList extends StatelessWidget {
                       color: color.withValues(alpha: 0.12),
                       shape: BoxShape.circle,
                     ),
-                    child: Icon(
-                      eventIcon(event.type),
-                      color: color,
-                    ),
+                    child: Icon(eventIcon(event.type), color: color),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: <Widget>[
-                        Row(
-                          children: <Widget>[
-                            Expanded(
-                              child: Text(
-                                event.isPrivate
-                                    ? 'אירוע פרטי · ${event.title}'
-                                    : event.title,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w900,
-                                ),
-                              ),
-                            ),
-                            if (event.isPrivate)
-                              const Icon(
-                                Icons.lock_rounded,
-                                size: 16,
-                              ),
-                          ],
+                        Text(
+                          event.isPrivate
+                              ? 'אירוע פרטי · ${event.title}'
+                              : event.title,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w900,
+                          ),
                         ),
                         const SizedBox(height: 3),
                         Text(
                           '${showDate ? '${event.start.day}/${event.start.month} · ' : ''}'
-                          '${timeLabel(event)} · ${event.type.label}'
+                          '${eventTimeLabel(event)} · ${event.type.label}'
                           '${event.location.isEmpty ? '' : ' · ${event.location}'}',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
