@@ -86,6 +86,7 @@ class ShoppingController extends StateNotifier<ShoppingState> {
         familyId: familyId,
         name: 'קניות שבועיות',
         createdAt: DateTime.now(),
+        sortOrder: 0,
       );
       await _repository.saveLists(<ShoppingList>[
         ...state.lists,
@@ -143,11 +144,20 @@ class ShoppingController extends StateNotifier<ShoppingState> {
 
   Future<bool> createList(String familyId, String name) async {
     if (name.trim().length < 2) return false;
+    final int nextOrder = state.lists
+            .where((ShoppingList list) => list.familyId == familyId)
+            .fold<int>(
+              -1,
+              (int maxOrder, ShoppingList list) =>
+                  list.sortOrder > maxOrder ? list.sortOrder : maxOrder,
+            ) +
+        1;
     final ShoppingList list = ShoppingList(
       id: 'list-${DateTime.now().microsecondsSinceEpoch}',
       familyId: familyId,
       name: name.trim(),
       createdAt: DateTime.now(),
+      sortOrder: nextOrder,
     );
     final List<ShoppingList> updated = <ShoppingList>[...state.lists, list];
     await _repository.saveLists(updated);
@@ -166,35 +176,92 @@ class ShoppingController extends StateNotifier<ShoppingState> {
     state = state.copyWith(lists: updated);
   }
 
-  Future<bool> deleteList(String familyId, String listId) async {
-    final List<ShoppingList> familyLists = state.lists
-        .where((ShoppingList list) => list.familyId == familyId)
+  Future<bool> archiveList(String familyId, String listId) async {
+    final List<ShoppingList> activeLists = state.lists
+        .where(
+          (ShoppingList list) => list.familyId == familyId && !list.isArchived,
+        )
         .toList();
-    if (familyLists.length <= 1) return false;
+    if (activeLists.length <= 1) {
+      return false;
+    }
 
-    final List<ShoppingList> updatedLists =
-        state.lists.where((ShoppingList list) => list.id != listId).toList();
-    final List<ShoppingItem> updatedItems = state.items
-        .where((ShoppingItem item) => item.listId != listId)
-        .toList();
-    final List<RecurringProduct> updatedRecurring = state.recurringProducts
-        .where((RecurringProduct product) => product.listId != listId)
-        .toList();
-    final String next = updatedLists
-        .firstWhere((ShoppingList list) => list.familyId == familyId)
-        .id;
+    final List<ShoppingList> updated = state.lists.map(
+      (ShoppingList list) {
+        return list.id == listId ? list.copyWith(isArchived: true) : list;
+      },
+    ).toList();
 
-    await _repository.saveLists(updatedLists);
-    await _repository.saveItems(updatedItems);
-    await _repository.saveRecurringProducts(updatedRecurring);
-    await _repository.saveSelectedListId(next);
+    final List<ShoppingList> remainingLists = updated
+        .where(
+          (ShoppingList list) => list.familyId == familyId && !list.isArchived,
+        )
+        .toList()
+      ..sort(
+        (ShoppingList first, ShoppingList second) =>
+            first.sortOrder.compareTo(second.sortOrder),
+      );
+
+    final String nextListId = remainingLists.first.id;
+
+    await _repository.saveLists(updated);
+    await _repository.saveSelectedListId(nextListId);
     state = state.copyWith(
-      lists: updatedLists,
-      items: updatedItems,
-      recurringProducts: updatedRecurring,
-      selectedListId: next,
+      lists: updated,
+      selectedListId: nextListId,
     );
     return true;
+  }
+
+  Future<void> restoreList(String listId) async {
+    final List<ShoppingList> updated = state.lists.map(
+      (ShoppingList list) {
+        return list.id == listId ? list.copyWith(isArchived: false) : list;
+      },
+    ).toList();
+    await _repository.saveLists(updated);
+    state = state.copyWith(lists: updated);
+  }
+
+  Future<void> reorderLists(
+    String familyId,
+    int oldIndex,
+    int newIndex,
+  ) async {
+    final List<ShoppingList> activeLists = state.lists
+        .where(
+          (ShoppingList list) => list.familyId == familyId && !list.isArchived,
+        )
+        .toList()
+      ..sort(
+        (ShoppingList first, ShoppingList second) =>
+            first.sortOrder.compareTo(second.sortOrder),
+      );
+
+    if (oldIndex < 0 ||
+        oldIndex >= activeLists.length ||
+        newIndex < 0 ||
+        newIndex >= activeLists.length) {
+      return;
+    }
+
+    final ShoppingList moved = activeLists.removeAt(oldIndex);
+    activeLists.insert(newIndex, moved);
+
+    final Map<String, int> orders = <String, int>{
+      for (int index = 0; index < activeLists.length; index++)
+        activeLists[index].id: index,
+    };
+
+    final List<ShoppingList> updated = state.lists.map(
+      (ShoppingList list) {
+        final int? order = orders[list.id];
+        return order == null ? list : list.copyWith(sortOrder: order);
+      },
+    ).toList();
+
+    await _repository.saveLists(updated);
+    state = state.copyWith(lists: updated);
   }
 
   Future<bool> addItem({
@@ -454,11 +521,38 @@ final Provider<List<ShoppingList>> activeFamilyShoppingListsProvider =
     Provider<List<ShoppingList>>((Ref ref) {
   final String? familyId = ref.watch(familyControllerProvider).activeFamilyId;
   if (familyId == null) return <ShoppingList>[];
-  return ref
+  final List<ShoppingList> lists = ref
       .watch(shoppingControllerProvider)
       .lists
-      .where((ShoppingList list) => list.familyId == familyId)
-      .toList();
+      .where(
+        (ShoppingList list) => list.familyId == familyId && !list.isArchived,
+      )
+      .toList()
+    ..sort(
+      (ShoppingList first, ShoppingList second) =>
+          first.sortOrder.compareTo(second.sortOrder),
+    );
+  return lists;
+});
+
+final Provider<List<ShoppingList>> archivedFamilyShoppingListsProvider =
+    Provider<List<ShoppingList>>((Ref ref) {
+  final String? familyId = ref.watch(familyControllerProvider).activeFamilyId;
+  if (familyId == null) {
+    return <ShoppingList>[];
+  }
+  final List<ShoppingList> lists = ref
+      .watch(shoppingControllerProvider)
+      .lists
+      .where(
+        (ShoppingList list) => list.familyId == familyId && list.isArchived,
+      )
+      .toList()
+    ..sort(
+      (ShoppingList first, ShoppingList second) =>
+          first.sortOrder.compareTo(second.sortOrder),
+    );
+  return lists;
 });
 
 final Provider<ShoppingList?> activeShoppingListProvider =

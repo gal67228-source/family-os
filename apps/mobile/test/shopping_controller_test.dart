@@ -61,6 +61,42 @@ void main() {
     );
   });
 
+  test('archives, restores and reorders lists', () async {
+    final MemoryShoppingRepository repository = MemoryShoppingRepository();
+    final ShoppingController controller = ShoppingController(repository);
+    await controller.load();
+    await controller.ensureFamilyReady('f1');
+    await controller.createList('f1', 'פארם');
+    await controller.createList('f1', 'אירוח');
+
+    final String archivedId = controller.state.selectedListId!;
+    expect(await controller.archiveList('f1', archivedId), isTrue);
+    expect(
+      controller.state.lists
+          .firstWhere((ShoppingList list) => list.id == archivedId)
+          .isArchived,
+      isTrue,
+    );
+
+    await controller.restoreList(archivedId);
+    expect(
+      controller.state.lists
+          .firstWhere((ShoppingList list) => list.id == archivedId)
+          .isArchived,
+      isFalse,
+    );
+
+    await controller.reorderLists('f1', 0, 2);
+    final List<ShoppingList> ordered = controller.state.lists
+        .where((ShoppingList list) => !list.isArchived)
+        .toList()
+      ..sort(
+        (ShoppingList first, ShoppingList second) =>
+            first.sortOrder.compareTo(second.sortOrder),
+      );
+    expect(ordered, hasLength(3));
+  });
+
   test('shopping item lifecycle and checked cleanup work', () async {
     final MemoryShoppingRepository repository = MemoryShoppingRepository();
     final ShoppingController controller = ShoppingController(repository);

@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.10.1
+- Fixed archived-list selection after moving a list to the archive.
+- Replaced deprecated ReorderableListView onReorder with onReorderItem.
+- No feature changes.
+
+## 1.10.0
+- Removed the three-dot action from shopping-list chips.
+- Added drag-and-drop ordering for active shopping lists.
+- Added list archiving and restoration.
+- Preserved the last selected list between sessions.
+- Kept list creation exclusively in the app-bar add-list action.
+
 ## 1.9.2
 - Newly created automatic recurring products are added immediately to their target list.
 - The initial addition time is saved so the product is not duplicated on the next screen opening.

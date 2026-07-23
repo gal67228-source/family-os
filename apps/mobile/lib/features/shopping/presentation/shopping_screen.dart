@@ -70,92 +70,6 @@ class _ShoppingScreenState extends ConsumerState<ShoppingScreen> {
     }
   }
 
-  Future<void> _manageList(
-    String familyId,
-    ShoppingList list,
-    int listCount,
-  ) async {
-    final String? action = await showModalBottomSheet<String>(
-      context: context,
-      showDragHandle: true,
-      builder: (BuildContext context) => SafeArea(
-        child: Wrap(
-          children: <Widget>[
-            ListTile(
-              leading: const Icon(Icons.edit_rounded),
-              title: const Text('שנה שם'),
-              onTap: () => Navigator.pop(context, 'rename'),
-            ),
-            ListTile(
-              enabled: listCount > 1,
-              leading: const Icon(Icons.delete_outline_rounded),
-              title: const Text('מחק רשימה'),
-              subtitle: listCount <= 1
-                  ? const Text('חייבת להישאר לפחות רשימה אחת')
-                  : null,
-              onTap:
-                  listCount > 1 ? () => Navigator.pop(context, 'delete') : null,
-            ),
-          ],
-        ),
-      ),
-    );
-
-    if (!mounted) return;
-    if (action == 'rename') {
-      final TextEditingController controller =
-          TextEditingController(text: list.name);
-      final String? name = await showDialog<String>(
-        context: context,
-        builder: (BuildContext dialogContext) => AlertDialog(
-          title: const Text('שינוי שם'),
-          content: TextField(controller: controller, autofocus: true),
-          actions: <Widget>[
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext),
-              child: const Text('ביטול'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(dialogContext, controller.text),
-              child: const Text('שמור'),
-            ),
-          ],
-        ),
-      );
-      controller.dispose();
-      if (name != null) {
-        await ref
-            .read(shoppingControllerProvider.notifier)
-            .renameList(list.id, name);
-      }
-    } else if (action == 'delete') {
-      final bool? confirmed = await showDialog<bool>(
-        context: context,
-        builder: (BuildContext dialogContext) => AlertDialog(
-          title: const Text('למחוק את הרשימה?'),
-          content: const Text(
-            'כל המוצרים והמוצרים הקבועים ברשימה יימחקו.',
-          ),
-          actions: <Widget>[
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext, false),
-              child: const Text('ביטול'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(dialogContext, true),
-              child: const Text('מחק'),
-            ),
-          ],
-        ),
-      );
-      if (confirmed == true) {
-        await ref
-            .read(shoppingControllerProvider.notifier)
-            .deleteList(familyId, list.id);
-      }
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final ShoppingState state = ref.watch(shoppingControllerProvider);
@@ -172,12 +86,52 @@ class _ShoppingScreenState extends ConsumerState<ShoppingScreen> {
       textDirection: TextDirection.rtl,
       child: Scaffold(
         appBar: AppBar(
-          title: Text(activeList?.name ?? 'קניות'),
+          title: GestureDetector(
+            onLongPress: activeList == null || familyId == null
+                ? null
+                : () async {
+                    final bool? confirmed = await showDialog<bool>(
+                      context: context,
+                      builder: (BuildContext dialogContext) {
+                        return AlertDialog(
+                          title: const Text('להעביר לארכיון?'),
+                          content: Text(
+                            'הרשימה "${activeList.name}" תוסתר '
+                            'מהמסך הראשי ותישמר בארכיון.',
+                          ),
+                          actions: <Widget>[
+                            TextButton(
+                              onPressed: () =>
+                                  Navigator.pop(dialogContext, false),
+                              child: const Text('ביטול'),
+                            ),
+                            FilledButton(
+                              onPressed: () =>
+                                  Navigator.pop(dialogContext, true),
+                              child: const Text('העבר לארכיון'),
+                            ),
+                          ],
+                        );
+                      },
+                    );
+                    if (confirmed == true) {
+                      await ref
+                          .read(shoppingControllerProvider.notifier)
+                          .archiveList(familyId, activeList.id);
+                    }
+                  },
+            child: Text(activeList?.name ?? 'קניות'),
+          ),
           actions: <Widget>[
             IconButton(
               tooltip: 'מוצרים קבועים',
               onPressed: () => context.push('/shopping/recurring'),
               icon: const Icon(Icons.repeat_rounded),
+            ),
+            IconButton(
+              tooltip: 'ארכיון רשימות',
+              onPressed: () => context.push('/shopping/archive'),
+              icon: const Icon(Icons.archive_outlined),
             ),
             IconButton(
               tooltip: 'רשימה חדשה',
@@ -191,32 +145,39 @@ class _ShoppingScreenState extends ConsumerState<ShoppingScreen> {
             : Column(
                 children: <Widget>[
                   SizedBox(
-                    height: 52,
-                    child: ListView.separated(
+                    height: 56,
+                    child: ReorderableListView.builder(
                       padding: const EdgeInsets.symmetric(horizontal: 12),
                       scrollDirection: Axis.horizontal,
+                      buildDefaultDragHandles: false,
                       itemCount: lists.length,
-                      separatorBuilder: (_, __) => const SizedBox(width: 8),
+                      onReorderItem: (int oldIndex, int newIndex) async {
+                        await ref
+                            .read(shoppingControllerProvider.notifier)
+                            .reorderLists(
+                              familyId!,
+                              oldIndex,
+                              newIndex,
+                            );
+                      },
                       itemBuilder: (BuildContext context, int index) {
                         final ShoppingList list = lists[index];
                         final bool selected = list.id == activeList.id;
-                        return InputChip(
-                          label: Text(list.name),
-                          selected: selected,
-                          onSelected: (_) => ref
-                              .read(shoppingControllerProvider.notifier)
-                              .selectList(list.id),
-                          onPressed: () => ref
-                              .read(shoppingControllerProvider.notifier)
-                              .selectList(list.id),
-                          onDeleted: selected && familyId != null
-                              ? () => _manageList(
-                                    familyId,
-                                    list,
-                                    lists.length,
+                        return Padding(
+                          key: ValueKey<String>(list.id),
+                          padding: const EdgeInsets.only(left: 8),
+                          child: ReorderableDragStartListener(
+                            index: index,
+                            child: ChoiceChip(
+                              label: Text(list.name),
+                              selected: selected,
+                              onSelected: (_) => ref
+                                  .read(
+                                    shoppingControllerProvider.notifier,
                                   )
-                              : null,
-                          deleteIcon: const Icon(Icons.more_horiz_rounded),
+                                  .selectList(list.id),
+                            ),
+                          ),
                         );
                       },
                     ),
