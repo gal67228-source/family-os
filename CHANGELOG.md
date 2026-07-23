@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.8.5
+- Fixed the conditional dashboard-only floating action button syntax.
+- Quick add remains visible only on the dashboard.
+
+## 1.8.4
+- Added the same shopping actions when the list is empty.
+- Removed the quick-add floating button from shopping and other module pages.
+- Kept the quick-add floating button only on the dashboard.
+
 ## 1.8.3
 - Moved the voice-add action next to the manual Add Product action.
 - Voice shopping now starts listening automatically when opened.

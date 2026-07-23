@@ -46,20 +46,39 @@ class ShoppingScreen extends ConsumerWidget {
                     icon: Icons.shopping_cart_outlined,
                     title: 'רשימת הקניות ריקה',
                     message: 'הוסף מוצרים או טען מוצרים קבועים לרשימה.',
-                    action: Wrap(
-                      spacing: 10,
-                      runSpacing: 10,
-                      alignment: WrapAlignment.center,
+                    action: Column(
+                      mainAxisSize: MainAxisSize.min,
                       children: <Widget>[
-                        FilledButton.icon(
-                          onPressed: () => context.push('/shopping/add'),
-                          icon: const Icon(Icons.add_rounded),
-                          label: const Text('הוסף מוצר'),
+                        SizedBox(
+                          width: double.infinity,
+                          child: OutlinedButton.icon(
+                            onPressed: () => context.push('/shopping/store'),
+                            icon: const Icon(
+                              Icons.storefront_rounded,
+                            ),
+                            label: const Text('מצב קנייה'),
+                          ),
                         ),
-                        OutlinedButton.icon(
-                          onPressed: () => context.push('/shopping/voice'),
-                          icon: const Icon(Icons.mic_rounded),
-                          label: const Text('הכתבה קולית'),
+                        const SizedBox(height: 10),
+                        Row(
+                          children: <Widget>[
+                            Expanded(
+                              child: FilledButton.icon(
+                                onPressed: () => context.push('/shopping/add'),
+                                icon: const Icon(Icons.add_rounded),
+                                label: const Text('הוסף מוצר'),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: FilledButton.tonalIcon(
+                                onPressed: () =>
+                                    context.push('/shopping/voice'),
+                                icon: const Icon(Icons.mic_rounded),
+                                label: const Text('הוסף בקול'),
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
@@ -220,10 +239,6 @@ class ShoppingScreen extends ConsumerWidget {
                         ],
                     ],
                   ),
-        floatingActionButton: FloatingActionButton(
-          onPressed: () => context.push('/shopping/add'),
-          child: const Icon(Icons.add_rounded),
-        ),
       ),
     );
   }

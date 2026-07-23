@@ -79,16 +79,18 @@ class ShellScreen extends StatelessWidget {
     return Scaffold(
       body: navigationShell,
       extendBody: true,
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _openQuickAdd(context),
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
-        shape: const CircleBorder(),
-        child: const Icon(
-          Icons.add_rounded,
-          size: 30,
-        ),
-      ),
+      floatingActionButton: navigationShell.currentIndex == 0
+          ? FloatingActionButton(
+              onPressed: () => _openQuickAdd(context),
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              shape: const CircleBorder(),
+              child: const Icon(
+                Icons.add_rounded,
+                size: 30,
+              ),
+            )
+          : null,
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       bottomNavigationBar: _BottomNavigation(
         currentIndex: navigationShell.currentIndex,
