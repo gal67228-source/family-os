@@ -85,7 +85,8 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     final int leading = first.weekday % 7;
     final int days =
         DateTime(_visibleMonth.year, _visibleMonth.month + 1, 0).day;
-    final List<DateTime?> result = List<DateTime?>.filled(leading, null);
+    final List<DateTime?> result =
+        List<DateTime?>.filled(leading, null, growable: true);
     result.addAll(
       List<DateTime>.generate(
         days,

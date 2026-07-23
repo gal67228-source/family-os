@@ -137,12 +137,6 @@ final GoRouter appRouter = GoRouter(
       },
     ),
     GoRoute(
-      path: '/calendar',
-      builder: (BuildContext context, GoRouterState state) {
-        return const CalendarScreen();
-      },
-    ),
-    GoRoute(
       path: '/calendar/new',
       builder: (BuildContext context, GoRouterState state) {
         final String? rawDate = state.uri.queryParameters['date'];
@@ -194,6 +188,16 @@ final GoRouter appRouter = GoRouter(
               path: '/shopping',
               builder: (BuildContext context, GoRouterState state) {
                 return const ShoppingScreen();
+              },
+            ),
+          ],
+        ),
+        StatefulShellBranch(
+          routes: <RouteBase>[
+            GoRoute(
+              path: '/calendar',
+              builder: (BuildContext context, GoRouterState state) {
+                return const CalendarScreen();
               },
             ),
           ],

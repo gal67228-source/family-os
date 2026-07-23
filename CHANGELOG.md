@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.1.3
+- Fixed the calendar runtime crash caused by a fixed-length month-cell list.
+- Added Calendar as a permanent bottom-navigation destination.
+- Calendar now opens inside the main application shell.
+
 ## 2.1.2
 - Fixed the weekday header cell to allow a runtime day label.
 - No feature changes.

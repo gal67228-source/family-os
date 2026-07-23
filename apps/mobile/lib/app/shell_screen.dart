@@ -151,6 +151,13 @@ class _BottomNavigation extends StatelessWidget {
           _NavItem(
             index: 3,
             currentIndex: currentIndex,
+            icon: Icons.calendar_month_rounded,
+            label: 'יומן',
+            onSelected: onSelected,
+          ),
+          _NavItem(
+            index: 4,
+            currentIndex: currentIndex,
             icon: Icons.menu_rounded,
             label: 'עוד',
             onSelected: onSelected,
