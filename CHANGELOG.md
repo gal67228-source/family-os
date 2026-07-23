@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.2.0
+- Redesigned the family calendar with a richer visual hierarchy.
+- Added a Today shortcut, purple selected-day treatment and improved event cards.
+- Added event-type icons and a dedicated floating add button.
+- Improved empty-state presentation and monthly navigation.
+
 ## 2.1.3
 - Fixed the calendar runtime crash caused by a fixed-length month-cell list.
 - Added Calendar as a permanent bottom-navigation destination.
