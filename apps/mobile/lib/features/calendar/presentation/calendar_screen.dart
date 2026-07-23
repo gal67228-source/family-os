@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 import '../../../core/design/app_colors.dart';
 import '../application/calendar_controller.dart';
 import '../domain/calendar_event.dart';
+import '../../tasks/application/task_controller.dart';
+import '../../tasks/domain/family_task.dart';
 
 enum _CalendarViewMode { month, week, day, agenda }
 
@@ -407,6 +409,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     final List<CalendarEvent> familyEvents =
         ref.watch(activeFamilyCalendarEventsProvider);
     final List<CalendarEvent> events = _filteredEvents(familyEvents);
+    final List<FamilyTask> calendarTasks = ref.watch(activeFamilyTasksProvider);
 
     return Directionality(
       textDirection: TextDirection.rtl,
@@ -505,6 +508,25 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                               setState(() => _viewMode = value.first);
                             },
                           ),
+                          if (calendarTasks.any(
+                            (FamilyTask task) => !task.isCompleted,
+                          )) ...<Widget>[
+                            const SizedBox(height: 4),
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: Chip(
+                                avatar: const Icon(
+                                  Icons.task_alt_rounded,
+                                  size: 17,
+                                ),
+                                label: Text(
+                                  '${calendarTasks.where(
+                                        (FamilyTask task) => !task.isCompleted,
+                                      ).length} משימות ביומן',
+                                ),
+                              ),
+                            ),
+                          ],
                           if (_query.isNotEmpty ||
                               _typeFilters.isNotEmpty) ...<Widget>[
                             const SizedBox(height: 6),

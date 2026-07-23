@@ -1,5 +1,14 @@
 # Changelog
 
+## 2.4.0
+- Added task assignee IDs, due times and recurring schedules.
+- Added Open, Mine, Overdue and Completed task filters.
+- Added task filtering by priority.
+- Added richer priority, assignee, date and recurrence indicators.
+- Completing a recurring task now creates its next occurrence.
+- Added a calendar indicator for active dated tasks.
+- Improved task creation layout and bottom safe-area handling.
+
 ## 2.3.2
 - Restored a permanent Add Event button in the calendar AppBar.
 - Replaced the small floating button with a labeled Event button.

@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../../families/application/family_controller.dart';
 import '../data/local_task_repository.dart';
 import '../data/task_repository.dart';
@@ -28,39 +29,95 @@ class TaskController extends StateNotifier<TaskState> {
     try {
       state = TaskState(tasks: await _repository.loadTasks());
     } catch (_) {
-      state = const TaskState(errorMessage: 'לא הצלחנו לטעון משימות.');
+      state = const TaskState(
+        errorMessage: 'לא הצלחנו לטעון משימות.',
+      );
     }
   }
 
   Future<bool> addTask({
     required String familyId,
     required String title,
+    required String assigneeId,
     required String assigneeName,
     required TaskPriority priority,
     required DateTime dueDate,
+    required bool hasDueTime,
+    required TaskRecurrence recurrence,
   }) async {
-    if (title.trim().length < 2) return false;
+    if (title.trim().length < 2) {
+      return false;
+    }
+
     final DateTime now = DateTime.now();
     final FamilyTask task = FamilyTask(
       id: now.microsecondsSinceEpoch.toString(),
       familyId: familyId,
       title: title.trim(),
+      assigneeId: assigneeId,
       assigneeName: assigneeName.trim(),
       priority: priority,
       dueDate: dueDate,
+      hasDueTime: hasDueTime,
+      recurrence: recurrence,
       isCompleted: false,
+      completedAt: null,
       createdAt: now,
     );
+
     await _persist(<FamilyTask>[...state.tasks, task]);
     return true;
   }
 
   Future<void> toggleCompleted(String id) async {
-    await _persist(state.tasks.map((FamilyTask task) {
-      return task.id == id
-          ? task.copyWith(isCompleted: !task.isCompleted)
-          : task;
-    }).toList());
+    final List<FamilyTask> updated = <FamilyTask>[];
+
+    for (final FamilyTask task in state.tasks) {
+      if (task.id != id) {
+        updated.add(task);
+        continue;
+      }
+
+      if (task.isCompleted) {
+        updated.add(
+          task.copyWith(
+            isCompleted: false,
+            clearCompletedAt: true,
+          ),
+        );
+        continue;
+      }
+
+      updated.add(
+        task.copyWith(
+          isCompleted: true,
+          completedAt: DateTime.now(),
+        ),
+      );
+
+      if (task.recurrence != TaskRecurrence.none) {
+        final DateTime nextDate = task.recurrence.nextDueDate(task.dueDate);
+
+        updated.add(
+          FamilyTask(
+            id: DateTime.now().microsecondsSinceEpoch.toString(),
+            familyId: task.familyId,
+            title: task.title,
+            assigneeId: task.assigneeId,
+            assigneeName: task.assigneeName,
+            priority: task.priority,
+            dueDate: nextDate,
+            hasDueTime: task.hasDueTime,
+            recurrence: task.recurrence,
+            isCompleted: false,
+            completedAt: null,
+            createdAt: DateTime.now(),
+          ),
+        );
+      }
+    }
+
+    await _persist(updated);
   }
 
   Future<void> deleteTask(String id) async {
@@ -87,10 +144,19 @@ final Provider<List<FamilyTask>> activeFamilyTasksProvider =
     Provider<List<FamilyTask>>((Ref ref) {
   final String? familyId = ref.watch(familyControllerProvider).activeFamilyId;
   final List<FamilyTask> tasks = ref.watch(taskControllerProvider).tasks;
-  if (familyId == null) return <FamilyTask>[];
-  final List<FamilyTask> result = tasks
-      .where((FamilyTask task) => task.familyId == familyId)
-      .toList()
-    ..sort((FamilyTask a, FamilyTask b) => a.dueDate.compareTo(b.dueDate));
+
+  if (familyId == null) {
+    return <FamilyTask>[];
+  }
+
+  final List<FamilyTask> result =
+      tasks.where((FamilyTask task) => task.familyId == familyId).toList()
+        ..sort((FamilyTask first, FamilyTask second) {
+          if (first.isCompleted != second.isCompleted) {
+            return first.isCompleted ? 1 : -1;
+          }
+          return first.dueDate.compareTo(second.dueDate);
+        });
+
   return result;
 });
