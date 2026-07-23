@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.7.9
+- Improved voice shopping parser to support consecutive spoken products without commas or conjunctions.
+
 ## 1.7.8
 - Fixed AndroidManifest generation for voice permissions.
 - Permissions are now inserted inside the manifest root element.
