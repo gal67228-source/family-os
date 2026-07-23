@@ -434,6 +434,19 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
           ),
           actions: <Widget>[
             IconButton(
+              tooltip: 'אירוע חדש',
+              onPressed: () {
+                context.push(
+                  '/calendar/new?date=${_selectedDay.toIso8601String()}',
+                );
+              },
+              icon: const Icon(
+                Icons.add_circle_rounded,
+                color: Color(0xFF6D3BE7),
+                size: 28,
+              ),
+            ),
+            IconButton(
               tooltip: 'חיפוש',
               onPressed: _openSearch,
               icon: Badge(
@@ -452,16 +465,21 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
             ),
           ],
         ),
-        floatingActionButton: FloatingActionButton.small(
-          onPressed: () {
-            context.push(
-              '/calendar/new?date=${_selectedDay.toIso8601String()}',
-            );
-          },
-          backgroundColor: const Color(0xFF6D3BE7),
-          foregroundColor: Colors.white,
-          child: const Icon(Icons.add_rounded),
+        floatingActionButton: Padding(
+          padding: const EdgeInsets.only(bottom: 74),
+          child: FloatingActionButton.extended(
+            onPressed: () {
+              context.push(
+                '/calendar/new?date=${_selectedDay.toIso8601String()}',
+              );
+            },
+            backgroundColor: const Color(0xFF6D3BE7),
+            foregroundColor: Colors.white,
+            icon: const Icon(Icons.add_rounded),
+            label: const Text('אירוע חדש'),
+          ),
         ),
+        floatingActionButtonLocation: FloatingActionButtonLocation.startFloat,
         body: calendarState.isLoading
             ? const Center(child: CircularProgressIndicator())
             : SafeArea(

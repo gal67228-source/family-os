@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.3.2
+- Restored a permanent Add Event button in the calendar AppBar.
+- Replaced the small floating button with a labeled Event button.
+- Positioned the floating button above the bottom navigation bar.
+
 ## 2.3.1
 - Removed the unused calendar helper that caused CI analysis to fail.
 - No feature changes.
