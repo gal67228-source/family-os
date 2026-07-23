@@ -53,6 +53,47 @@ flutter create \
   --platforms android,ios \
   .
 
+
+python3 - <<'PY'
+from pathlib import Path
+
+manifest = Path("android/app/src/main/AndroidManifest.xml")
+text = manifest.read_text(encoding="utf-8")
+
+permissions = """<uses-permission android:name="android.permission.RECORD_AUDIO"/>
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.BLUETOOTH"/>
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN"/>
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT"/>
+    """
+
+if "android.permission.RECORD_AUDIO" not in text:
+    text = text.replace("<manifest xmlns:android=", permissions + "<manifest xmlns:android=")
+
+queries = """    <queries>
+        <intent>
+            <action android:name="android.speech.RecognitionService" />
+        </intent>
+    </queries>
+"""
+
+if "android.speech.RecognitionService" not in text:
+    text = text.replace("    <application", queries + "    <application")
+
+manifest.write_text(text, encoding="utf-8")
+
+info = Path("ios/Runner/Info.plist")
+info_text = info.read_text(encoding="utf-8")
+keys = """	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Family OS משתמש בזיהוי קולי להוספת מוצרים לרשימת הקניות.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Family OS צריך גישה למיקרופון כדי להוסיף מוצרים בקול.</string>
+"""
+if "NSSpeechRecognitionUsageDescription" not in info_text:
+    info_text = info_text.replace("</dict>", keys + "</dict>")
+info.write_text(info_text, encoding="utf-8")
+PY
+
 if [[ -f test/widget_test.dart ]] && grep -q "MyApp" test/widget_test.dart; then
   rm test/widget_test.dart
 fi

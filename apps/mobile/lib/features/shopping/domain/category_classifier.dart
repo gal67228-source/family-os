@@ -34,7 +34,7 @@ abstract final class CategoryClassifier {
         'לבן',
       ],
       ShoppingCategory.cheese: <String>[
-        'גבינה',
+        'גבינ',
         'קוטג',
         'בולגרית',
         'צהובה',

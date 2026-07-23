@@ -1,7 +1,7 @@
 name: family_os
 description: Family OS mobile application.
 publish_to: none
-version: 1.7.1+21
+version: 1.7.7+26
 
 environment:
   sdk: ">=3.5.0 <4.0.0"
@@ -15,6 +15,7 @@ dependencies:
   flutter_riverpod: ^2.6.1
   go_router: ^14.8.1
   shared_preferences: ^2.3.2
+  speech_to_text: ^7.4.0
 
 dev_dependencies:
   flutter_test:

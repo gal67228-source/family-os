@@ -27,6 +27,11 @@ class ShoppingScreen extends ConsumerWidget {
           title: const Text('קניות'),
           actions: <Widget>[
             IconButton(
+              tooltip: 'הוספה קולית',
+              onPressed: () => context.push('/shopping/voice'),
+              icon: const Icon(Icons.mic_rounded),
+            ),
+            IconButton(
               tooltip: 'מוצרים קבועים',
               onPressed: () => context.push('/shopping/recurring'),
               icon: const Icon(Icons.repeat_rounded),
@@ -46,10 +51,22 @@ class ShoppingScreen extends ConsumerWidget {
                     icon: Icons.shopping_cart_outlined,
                     title: 'רשימת הקניות ריקה',
                     message: 'הוסף מוצרים או טען מוצרים קבועים לרשימה.',
-                    action: FilledButton.icon(
-                      onPressed: () => context.push('/shopping/add'),
-                      icon: const Icon(Icons.add_rounded),
-                      label: const Text('הוסף מוצר'),
+                    action: Wrap(
+                      spacing: 10,
+                      runSpacing: 10,
+                      alignment: WrapAlignment.center,
+                      children: <Widget>[
+                        FilledButton.icon(
+                          onPressed: () => context.push('/shopping/add'),
+                          icon: const Icon(Icons.add_rounded),
+                          label: const Text('הוסף מוצר'),
+                        ),
+                        OutlinedButton.icon(
+                          onPressed: () => context.push('/shopping/voice'),
+                          icon: const Icon(Icons.mic_rounded),
+                          label: const Text('הכתבה קולית'),
+                        ),
+                      ],
                     ),
                   )
                 : ListView(
@@ -192,9 +209,10 @@ class ShoppingScreen extends ConsumerWidget {
                         ],
                     ],
                   ),
-        floatingActionButton: FloatingActionButton(
-          onPressed: () => context.push('/shopping/add'),
-          child: const Icon(Icons.add_rounded),
+        floatingActionButton: FloatingActionButton.extended(
+          onPressed: () => context.push('/shopping/voice'),
+          icon: const Icon(Icons.mic_rounded),
+          label: const Text('הוסף בקול'),
         ),
       ),
     );

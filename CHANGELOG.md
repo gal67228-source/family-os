@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.7.6
+- Fixed automatic classification of plural Hebrew cheese names such as `גבינות`.
+- Added singular and plural cheese parser coverage.
+
+## 1.7.4
+- Replaced the invalid `options` argument with `listenOptions`.
+- Kept all speech session settings inside `SpeechListenOptions`.
+
+## 1.7.2
+- Added real Hebrew speech-to-text shopping entry.
+- Added microphone actions to the shopping screen.
+- Added spoken-list parsing, quantities and automatic categories.
+- Added review and removal before saving recognized products.
+- Added Android and iOS microphone/speech permissions during cloud build.
+- Added voice parser tests.
+
 ## 1.7.0
 - Added persistent family shopping lists.
 - Added automatic department classification and sorting.
