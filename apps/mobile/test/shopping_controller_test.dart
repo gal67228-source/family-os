@@ -1,5 +1,6 @@
 import 'package:family_os/features/shopping/application/shopping_controller.dart';
 import 'package:family_os/features/shopping/data/shopping_repository.dart';
+import 'package:family_os/features/shopping/domain/product_category_preference.dart';
 import 'package:family_os/features/shopping/domain/recurring_product.dart';
 import 'package:family_os/features/shopping/domain/shopping_category.dart';
 import 'package:family_os/features/shopping/domain/shopping_item.dart';
@@ -26,6 +27,15 @@ class MemoryShoppingRepository implements ShoppingRepository {
   ) async {
     recurring = value;
   }
+
+  @override
+  Future<List<ProductCategoryPreference>> loadCategoryPreferences() async =>
+      <ProductCategoryPreference>[];
+
+  @override
+  Future<void> saveCategoryPreferences(
+    List<ProductCategoryPreference> preferences,
+  ) async {}
 }
 
 void main() {
@@ -72,5 +82,27 @@ void main() {
     expect(await controller.addDueRecurringProducts('f1'), 1);
     expect(controller.state.items, hasLength(1));
     expect(controller.state.items.single.name, 'חלב');
+  });
+
+  test('merges duplicate numeric quantities', () async {
+    final MemoryShoppingRepository repository = MemoryShoppingRepository();
+    final ShoppingController controller = ShoppingController(repository);
+    await controller.load();
+
+    await controller.addItem(
+      familyId: 'f1',
+      name: 'חלב',
+      quantity: '2',
+      note: '',
+    );
+    await controller.addItem(
+      familyId: 'f1',
+      name: 'חלב',
+      quantity: '1',
+      note: '',
+    );
+
+    expect(controller.state.items, hasLength(1));
+    expect(controller.state.items.single.quantity, '3');
   });
 }

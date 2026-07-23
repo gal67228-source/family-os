@@ -22,15 +22,18 @@ class ShoppingItem {
   final DateTime createdAt;
 
   ShoppingItem copyWith({
+    String? name,
+    String? quantity,
+    String? note,
     bool? isChecked,
     ShoppingCategory? category,
   }) {
     return ShoppingItem(
       id: id,
       familyId: familyId,
-      name: name,
-      quantity: quantity,
-      note: note,
+      name: name ?? this.name,
+      quantity: quantity ?? this.quantity,
+      note: note ?? this.note,
       category: category ?? this.category,
       isChecked: isChecked ?? this.isChecked,
       createdAt: createdAt,

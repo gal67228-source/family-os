@@ -154,6 +154,9 @@ class ShoppingScreen extends ConsumerWidget {
                                       value.category == category,
                                 ))
                                   ListTile(
+                                    onTap: () => context.push(
+                                      '/shopping/edit/${item.id}',
+                                    ),
                                     leading: Checkbox(
                                       value: item.isChecked,
                                       activeColor: AppColors.secondary,

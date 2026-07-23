@@ -4,6 +4,7 @@ import '../../families/application/family_controller.dart';
 import '../data/local_shopping_repository.dart';
 import '../data/shopping_repository.dart';
 import '../domain/category_classifier.dart';
+import '../domain/product_category_preference.dart';
 import '../domain/recurring_product.dart';
 import '../domain/shopping_category.dart';
 import '../domain/shopping_item.dart';
@@ -12,12 +13,14 @@ class ShoppingState {
   const ShoppingState({
     this.items = const <ShoppingItem>[],
     this.recurringProducts = const <RecurringProduct>[],
+    this.categoryPreferences = const <ProductCategoryPreference>[],
     this.isLoading = false,
     this.errorMessage,
   });
 
   final List<ShoppingItem> items;
   final List<RecurringProduct> recurringProducts;
+  final List<ProductCategoryPreference> categoryPreferences;
   final bool isLoading;
   final String? errorMessage;
 }
@@ -35,9 +38,12 @@ class ShoppingController extends StateNotifier<ShoppingState> {
       final List<ShoppingItem> items = await _repository.loadItems();
       final List<RecurringProduct> recurring =
           await _repository.loadRecurringProducts();
+      final List<ProductCategoryPreference> preferences =
+          await _repository.loadCategoryPreferences();
       state = ShoppingState(
         items: items,
         recurringProducts: recurring,
+        categoryPreferences: preferences,
       );
     } catch (_) {
       state = const ShoppingState(
@@ -58,14 +64,31 @@ class ShoppingController extends StateNotifier<ShoppingState> {
       return false;
     }
 
-    final bool exists = state.items.any(
+    final String normalizedKey = normalized.toLowerCase();
+    final ShoppingCategory preferredCategory = category ??
+        _preferredCategory(normalizedKey) ??
+        CategoryClassifier.classify(normalized);
+
+    final int duplicateIndex = state.items.indexWhere(
       (ShoppingItem item) =>
           item.familyId == familyId &&
           !item.isChecked &&
-          item.name.toLowerCase() == normalized.toLowerCase(),
+          item.name.toLowerCase() == normalizedKey,
     );
-    if (exists) {
-      return false;
+
+    if (duplicateIndex != -1) {
+      final ShoppingItem existing = state.items[duplicateIndex];
+      final String mergedQuantity =
+          _mergeQuantities(existing.quantity, quantity.trim());
+      final List<ShoppingItem> updated = List<ShoppingItem>.from(state.items)
+        ..[duplicateIndex] = existing.copyWith(
+          quantity: mergedQuantity,
+          note: note.trim().isEmpty ? existing.note : note.trim(),
+          category: preferredCategory,
+        );
+      await _saveItems(updated);
+      await _rememberCategory(normalizedKey, preferredCategory);
+      return true;
     }
 
     final DateTime now = DateTime.now();
@@ -75,13 +98,44 @@ class ShoppingController extends StateNotifier<ShoppingState> {
       name: normalized,
       quantity: quantity.trim(),
       note: note.trim(),
-      category: category ?? CategoryClassifier.classify(normalized),
+      category: preferredCategory,
       isChecked: false,
       createdAt: now,
     );
 
     await _saveItems(<ShoppingItem>[...state.items, item]);
+    await _rememberCategory(normalizedKey, preferredCategory);
     return true;
+  }
+
+  Future<void> updateItem({
+    required String itemId,
+    required String name,
+    required String quantity,
+    required String note,
+    required ShoppingCategory category,
+  }) async {
+    final String normalized = name.trim();
+    if (normalized.length < 2) {
+      return;
+    }
+
+    final List<ShoppingItem> updated = state.items.map(
+      (ShoppingItem item) {
+        if (item.id != itemId) {
+          return item;
+        }
+        return item.copyWith(
+          name: normalized,
+          quantity: quantity.trim(),
+          note: note.trim(),
+          category: category,
+        );
+      },
+    ).toList();
+
+    await _saveItems(updated);
+    await _rememberCategory(normalized.toLowerCase(), category);
   }
 
   Future<void> toggleItem(String itemId) async {
@@ -191,6 +245,7 @@ class ShoppingController extends StateNotifier<ShoppingState> {
     state = ShoppingState(
       items: items,
       recurringProducts: state.recurringProducts,
+      categoryPreferences: state.categoryPreferences,
     );
   }
 
@@ -201,7 +256,61 @@ class ShoppingController extends StateNotifier<ShoppingState> {
     state = ShoppingState(
       items: state.items,
       recurringProducts: products,
+      categoryPreferences: state.categoryPreferences,
     );
+  }
+
+  ShoppingCategory? _preferredCategory(String productName) {
+    for (final ProductCategoryPreference preference
+        in state.categoryPreferences) {
+      if (preference.productName == productName) {
+        return preference.category;
+      }
+    }
+    return null;
+  }
+
+  Future<void> _rememberCategory(
+    String productName,
+    ShoppingCategory category,
+  ) async {
+    final List<ProductCategoryPreference> updated = state.categoryPreferences
+        .where(
+          (ProductCategoryPreference preference) =>
+              preference.productName != productName,
+        )
+        .toList()
+      ..add(
+        ProductCategoryPreference(
+          productName: productName,
+          category: category,
+        ),
+      );
+
+    await _repository.saveCategoryPreferences(updated);
+    state = ShoppingState(
+      items: state.items,
+      recurringProducts: state.recurringProducts,
+      categoryPreferences: updated,
+    );
+  }
+
+  String _mergeQuantities(String first, String second) {
+    final int? firstNumber = int.tryParse(first.trim());
+    final int? secondNumber = int.tryParse(second.trim());
+    if (firstNumber != null && secondNumber != null) {
+      return (firstNumber + secondNumber).toString();
+    }
+    if (first.trim().isEmpty) {
+      return second.trim();
+    }
+    if (second.trim().isEmpty) {
+      return first.trim();
+    }
+    if (first.trim() == second.trim()) {
+      return first.trim();
+    }
+    return '${first.trim()} + ${second.trim()}';
   }
 }
 

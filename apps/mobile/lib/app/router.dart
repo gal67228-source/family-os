@@ -12,6 +12,7 @@ import '../features/families/presentation/manage_family_screen.dart';
 import '../features/families/presentation/switch_family_screen.dart';
 import '../features/more/presentation/more_screen.dart';
 import '../features/shopping/presentation/add_shopping_item_screen.dart';
+import '../features/shopping/presentation/edit_shopping_item_screen.dart';
 import '../features/shopping/presentation/recurring_products_screen.dart';
 import '../features/shopping/presentation/store_mode_screen.dart';
 import '../features/shopping/presentation/voice_shopping_screen.dart';
@@ -116,6 +117,14 @@ final GoRouter appRouter = GoRouter(
       path: '/shopping/voice',
       builder: (BuildContext context, GoRouterState state) {
         return const VoiceShoppingScreen();
+      },
+    ),
+    GoRoute(
+      path: '/shopping/edit/:itemId',
+      builder: (BuildContext context, GoRouterState state) {
+        return EditShoppingItemScreen(
+          itemId: state.pathParameters['itemId'] ?? '',
+        );
       },
     ),
     StatefulShellRoute.indexedStack(

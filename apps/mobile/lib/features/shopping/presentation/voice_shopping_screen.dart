@@ -170,6 +170,93 @@ class _VoiceShoppingScreenState extends ConsumerState<VoiceShoppingScreen> {
     });
   }
 
+  Future<void> _editDraft(int index) async {
+    final VoiceShoppingDraft current = _drafts[index];
+    final TextEditingController name =
+        TextEditingController(text: current.name);
+    final TextEditingController quantity =
+        TextEditingController(text: current.quantity);
+    ShoppingCategory category = current.category;
+
+    final VoiceShoppingDraft? result = await showDialog<VoiceShoppingDraft>(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return StatefulBuilder(
+          builder: (
+            BuildContext context,
+            void Function(void Function()) setDialogState,
+          ) {
+            return AlertDialog(
+              title: const Text('עריכת מוצר'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  TextField(
+                    controller: name,
+                    decoration: const InputDecoration(labelText: 'שם'),
+                  ),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: quantity,
+                    decoration: const InputDecoration(labelText: 'כמות'),
+                  ),
+                  const SizedBox(height: 10),
+                  DropdownButtonFormField<ShoppingCategory>(
+                    initialValue: category,
+                    decoration: const InputDecoration(labelText: 'מחלקה'),
+                    items: ShoppingCategory.values
+                        .map(
+                          (ShoppingCategory value) =>
+                              DropdownMenuItem<ShoppingCategory>(
+                            value: value,
+                            child: Text(value.label),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (ShoppingCategory? value) {
+                      if (value != null) {
+                        setDialogState(() {
+                          category = value;
+                        });
+                      }
+                    },
+                  ),
+                ],
+              ),
+              actions: <Widget>[
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                  child: const Text('ביטול'),
+                ),
+                FilledButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(
+                    VoiceShoppingDraft(
+                      name: name.text.trim(),
+                      quantity: quantity.text.trim(),
+                      category: category,
+                    ),
+                  ),
+                  child: const Text('שמור'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    name.dispose();
+    quantity.dispose();
+
+    if (result == null || result.name.isEmpty || !mounted) {
+      return;
+    }
+
+    setState(() {
+      _drafts = List<VoiceShoppingDraft>.from(_drafts)..[index] = result;
+    });
+  }
+
   @override
   void dispose() {
     _speech.stop();
@@ -306,6 +393,11 @@ class _VoiceShoppingScreenState extends ConsumerState<VoiceShoppingScreen> {
                               ),
                             ],
                           ),
+                        ),
+                        IconButton(
+                          tooltip: 'ערוך',
+                          onPressed: () => _editDraft(index),
+                          icon: const Icon(Icons.edit_rounded),
                         ),
                         IconButton(
                           tooltip: 'הסר',

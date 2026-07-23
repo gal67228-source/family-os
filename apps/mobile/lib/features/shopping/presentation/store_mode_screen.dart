@@ -109,6 +109,42 @@ class StoreModeScreen extends ConsumerWidget {
                           ),
                         ),
                     ],
+                  if (checked > 0) ...<Widget>[
+                    const SizedBox(height: 22),
+                    Text(
+                      'כבר בסל',
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                    const SizedBox(height: 8),
+                    for (final ShoppingItem item in items.where(
+                      (ShoppingItem value) => value.isChecked,
+                    ))
+                      Card(
+                        child: ListTile(
+                          leading: const Icon(
+                            Icons.check_circle_rounded,
+                            color: AppColors.secondary,
+                          ),
+                          title: Text(
+                            item.name,
+                            style: const TextStyle(
+                              decoration: TextDecoration.lineThrough,
+                            ),
+                          ),
+                          subtitle: item.quantity.isEmpty
+                              ? null
+                              : Text(item.quantity),
+                          trailing: TextButton(
+                            onPressed: () => ref
+                                .read(
+                                  shoppingControllerProvider.notifier,
+                                )
+                                .toggleItem(item.id),
+                            child: const Text('החזר'),
+                          ),
+                        ),
+                      ),
+                  ],
                   if (items.isNotEmpty &&
                       items.every(
                         (ShoppingItem item) => item.isChecked,
@@ -145,6 +181,33 @@ class StoreModeScreen extends ConsumerWidget {
               onPressed: familyId == null || checked == 0
                   ? null
                   : () async {
+                      final bool? confirmed = await showDialog<bool>(
+                        context: context,
+                        builder: (BuildContext dialogContext) {
+                          return AlertDialog(
+                            title: const Text('לסיים את הקנייה?'),
+                            content: Text(
+                              'יימחקו $checked מוצרים שסומנו. '
+                              'המוצרים שלא נקנו יישארו ברשימה.',
+                            ),
+                            actions: <Widget>[
+                              TextButton(
+                                onPressed: () =>
+                                    Navigator.of(dialogContext).pop(false),
+                                child: const Text('ביטול'),
+                              ),
+                              FilledButton(
+                                onPressed: () =>
+                                    Navigator.of(dialogContext).pop(true),
+                                child: const Text('סיום וניקוי'),
+                              ),
+                            ],
+                          );
+                        },
+                      );
+                      if (confirmed != true) {
+                        return;
+                      }
                       await ref
                           .read(shoppingControllerProvider.notifier)
                           .clearChecked(familyId);

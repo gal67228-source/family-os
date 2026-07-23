@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.8.2
+- Rebuilt the corrupted dashboard provider test file.
+- Added complete in-memory repositories for families, tasks and shopping.
+- No application behavior changes.
+
+## 1.8.1
+- Added editing for existing shopping products.
+- Added smart duplicate merging for numeric quantities.
+- Added remembered category preferences per product.
+- Added undo for checked products in supermarket mode.
+- Added confirmation before clearing checked products.
+- Added editing of voice-recognized product name, quantity and category.
+- Added shopping controller coverage for duplicate merging.
+
 ## 1.8.0
 - Added dictionary-based segmentation for consecutive spoken products.
 - Products can now be recognized without commas or Hebrew conjunctions.
