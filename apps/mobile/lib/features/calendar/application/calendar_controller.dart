@@ -46,7 +46,10 @@ class CalendarController extends StateNotifier<CalendarState> {
     required List<String> participantIds,
     required int colorValue,
     required CalendarRecurrence recurrence,
+    required int recurrenceInterval,
+    required DateTime? recurrenceEnd,
     required CalendarReminder reminder,
+    required bool isPrivate,
   }) async {
     if (title.trim().length < 2 || end.isBefore(start)) {
       return false;
@@ -65,7 +68,10 @@ class CalendarController extends StateNotifier<CalendarState> {
       participantIds: participantIds,
       colorValue: colorValue,
       recurrence: recurrence,
+      recurrenceInterval: recurrenceInterval,
+      recurrenceEnd: recurrenceEnd,
       reminder: reminder,
+      isPrivate: isPrivate,
       createdAt: now,
     );
     await _persist(<CalendarEvent>[...state.events, event]);

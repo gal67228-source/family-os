@@ -34,7 +34,10 @@ void main() {
         participantIds: <String>['m1'],
         colorValue: 0xFF1256E8,
         recurrence: CalendarRecurrence.yearly,
+        recurrenceInterval: 1,
+        recurrenceEnd: DateTime(2040, 5, 1),
         reminder: CalendarReminder.oneDay,
+        isPrivate: false,
       ),
       isTrue,
     );

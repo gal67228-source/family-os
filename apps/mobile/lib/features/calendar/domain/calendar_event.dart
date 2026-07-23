@@ -96,7 +96,10 @@ class CalendarEvent {
     required this.participantIds,
     required this.colorValue,
     required this.recurrence,
+    required this.recurrenceInterval,
+    required this.recurrenceEnd,
     required this.reminder,
+    required this.isPrivate,
     required this.createdAt,
   });
 
@@ -112,7 +115,10 @@ class CalendarEvent {
   final List<String> participantIds;
   final int colorValue;
   final CalendarRecurrence recurrence;
+  final int recurrenceInterval;
+  final DateTime? recurrenceEnd;
   final CalendarReminder reminder;
+  final bool isPrivate;
   final DateTime createdAt;
 
   CalendarEvent copyWith({
@@ -126,7 +132,11 @@ class CalendarEvent {
     List<String>? participantIds,
     int? colorValue,
     CalendarRecurrence? recurrence,
+    int? recurrenceInterval,
+    DateTime? recurrenceEnd,
+    bool clearRecurrenceEnd = false,
     CalendarReminder? reminder,
+    bool? isPrivate,
   }) {
     return CalendarEvent(
       id: id,
@@ -141,7 +151,11 @@ class CalendarEvent {
       participantIds: participantIds ?? this.participantIds,
       colorValue: colorValue ?? this.colorValue,
       recurrence: recurrence ?? this.recurrence,
+      recurrenceInterval: recurrenceInterval ?? this.recurrenceInterval,
+      recurrenceEnd:
+          clearRecurrenceEnd ? null : recurrenceEnd ?? this.recurrenceEnd,
       reminder: reminder ?? this.reminder,
+      isPrivate: isPrivate ?? this.isPrivate,
       createdAt: createdAt,
     );
   }
@@ -159,7 +173,10 @@ class CalendarEvent {
         'participantIds': participantIds,
         'colorValue': colorValue,
         'recurrence': recurrence.name,
+        'recurrenceInterval': recurrenceInterval,
+        'recurrenceEnd': recurrenceEnd?.toIso8601String(),
         'reminder': reminder.name,
+        'isPrivate': isPrivate,
         'createdAt': createdAt.toIso8601String(),
       };
 
@@ -193,10 +210,13 @@ class CalendarEvent {
         (CalendarRecurrence value) => value.name == recurrenceName,
         orElse: () => CalendarRecurrence.none,
       ),
+      recurrenceInterval: json['recurrenceInterval'] as int? ?? 1,
+      recurrenceEnd: DateTime.tryParse(json['recurrenceEnd'] as String? ?? ''),
       reminder: CalendarReminder.values.firstWhere(
         (CalendarReminder value) => value.name == reminderName,
         orElse: () => CalendarReminder.none,
       ),
+      isPrivate: json['isPrivate'] as bool? ?? false,
       createdAt: DateTime.tryParse(json['createdAt'] as String? ?? '') ??
           DateTime.now(),
     );

@@ -1,5 +1,17 @@
 # Changelog
 
+## 2.3.1
+- Removed the unused calendar helper that caused CI analysis to fail.
+- No feature changes.
+
+## 2.3.0
+- Added Month, Week, Day and Agenda calendar views.
+- Added real calendar search and event-type filtering.
+- Added custom recurrence intervals and optional recurrence end dates.
+- Added private family events.
+- Improved recurrence evaluation for daily, weekly, monthly and yearly events.
+- Kept event creation safe above phone gesture navigation.
+
 ## 2.2.3
 - Enabled immersive sticky mode to hide the phone status and navigation bars.
 - Added safe bottom spacing so the event save button remains accessible.
