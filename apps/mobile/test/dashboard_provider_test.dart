@@ -9,6 +9,7 @@ import 'package:family_os/features/shopping/data/shopping_repository.dart';
 import 'package:family_os/features/shopping/domain/product_category_preference.dart';
 import 'package:family_os/features/shopping/domain/recurring_product.dart';
 import 'package:family_os/features/shopping/domain/shopping_item.dart';
+import 'package:family_os/features/shopping/domain/shopping_list.dart';
 import 'package:family_os/features/tasks/application/task_controller.dart';
 import 'package:family_os/features/tasks/data/task_repository.dart';
 import 'package:family_os/features/tasks/domain/family_task.dart';
@@ -89,6 +90,18 @@ class MemoryShoppingRepository implements ShoppingRepository {
   Future<void> saveCategoryPreferences(
     List<ProductCategoryPreference> preferences,
   ) async {}
+
+  @override
+  Future<List<ShoppingList>> loadLists() async => <ShoppingList>[];
+
+  @override
+  Future<void> saveLists(List<ShoppingList> lists) async {}
+
+  @override
+  Future<String?> loadSelectedListId() async => null;
+
+  @override
+  Future<void> saveSelectedListId(String? listId) async {}
 }
 
 void main() {

@@ -4,6 +4,7 @@ class ShoppingItem {
   const ShoppingItem({
     required this.id,
     required this.familyId,
+    required this.listId,
     required this.name,
     required this.quantity,
     required this.note,
@@ -14,6 +15,7 @@ class ShoppingItem {
 
   final String id;
   final String familyId;
+  final String listId;
   final String name;
   final String quantity;
   final String note;
@@ -22,6 +24,7 @@ class ShoppingItem {
   final DateTime createdAt;
 
   ShoppingItem copyWith({
+    String? listId,
     String? name,
     String? quantity,
     String? note,
@@ -31,6 +34,7 @@ class ShoppingItem {
     return ShoppingItem(
       id: id,
       familyId: familyId,
+      listId: listId ?? this.listId,
       name: name ?? this.name,
       quantity: quantity ?? this.quantity,
       note: note ?? this.note,
@@ -43,6 +47,7 @@ class ShoppingItem {
   Map<String, Object?> toJson() => <String, Object?>{
         'id': id,
         'familyId': familyId,
+        'listId': listId,
         'name': name,
         'quantity': quantity,
         'note': note,
@@ -57,6 +62,7 @@ class ShoppingItem {
     return ShoppingItem(
       id: json['id'] as String? ?? '',
       familyId: json['familyId'] as String? ?? '',
+      listId: json['listId'] as String? ?? '',
       name: json['name'] as String? ?? '',
       quantity: json['quantity'] as String? ?? '',
       note: json['note'] as String? ?? '',

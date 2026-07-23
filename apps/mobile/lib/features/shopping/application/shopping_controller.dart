@@ -1,5 +1,4 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
 import '../../families/application/family_controller.dart';
 import '../data/local_shopping_repository.dart';
 import '../data/shopping_repository.dart';
@@ -8,12 +7,15 @@ import '../domain/product_category_preference.dart';
 import '../domain/recurring_product.dart';
 import '../domain/shopping_category.dart';
 import '../domain/shopping_item.dart';
+import '../domain/shopping_list.dart';
 
 class ShoppingState {
   const ShoppingState({
     this.items = const <ShoppingItem>[],
     this.recurringProducts = const <RecurringProduct>[],
     this.categoryPreferences = const <ProductCategoryPreference>[],
+    this.lists = const <ShoppingList>[],
+    this.selectedListId,
     this.isLoading = false,
     this.errorMessage,
   });
@@ -21,8 +23,32 @@ class ShoppingState {
   final List<ShoppingItem> items;
   final List<RecurringProduct> recurringProducts;
   final List<ProductCategoryPreference> categoryPreferences;
+  final List<ShoppingList> lists;
+  final String? selectedListId;
   final bool isLoading;
   final String? errorMessage;
+
+  ShoppingState copyWith({
+    List<ShoppingItem>? items,
+    List<RecurringProduct>? recurringProducts,
+    List<ProductCategoryPreference>? categoryPreferences,
+    List<ShoppingList>? lists,
+    String? selectedListId,
+    bool clearSelectedList = false,
+    bool? isLoading,
+    String? errorMessage,
+  }) {
+    return ShoppingState(
+      items: items ?? this.items,
+      recurringProducts: recurringProducts ?? this.recurringProducts,
+      categoryPreferences: categoryPreferences ?? this.categoryPreferences,
+      lists: lists ?? this.lists,
+      selectedListId:
+          clearSelectedList ? null : selectedListId ?? this.selectedListId,
+      isLoading: isLoading ?? this.isLoading,
+      errorMessage: errorMessage,
+    );
+  }
 }
 
 class ShoppingController extends StateNotifier<ShoppingState> {
@@ -35,21 +61,140 @@ class ShoppingController extends StateNotifier<ShoppingState> {
   Future<void> load() async {
     state = const ShoppingState(isLoading: true);
     try {
-      final List<ShoppingItem> items = await _repository.loadItems();
-      final List<RecurringProduct> recurring =
-          await _repository.loadRecurringProducts();
-      final List<ProductCategoryPreference> preferences =
-          await _repository.loadCategoryPreferences();
       state = ShoppingState(
-        items: items,
-        recurringProducts: recurring,
-        categoryPreferences: preferences,
+        items: await _repository.loadItems(),
+        recurringProducts: await _repository.loadRecurringProducts(),
+        categoryPreferences: await _repository.loadCategoryPreferences(),
+        lists: await _repository.loadLists(),
+        selectedListId: await _repository.loadSelectedListId(),
       );
     } catch (_) {
       state = const ShoppingState(
-        errorMessage: 'לא הצלחנו לטעון את רשימת הקניות.',
+        errorMessage: 'לא הצלחנו לטעון את רשימות הקניות.',
       );
     }
+  }
+
+  Future<void> ensureFamilyReady(String familyId) async {
+    List<ShoppingList> lists = state.lists
+        .where((ShoppingList list) => list.familyId == familyId)
+        .toList();
+
+    if (lists.isEmpty) {
+      final ShoppingList defaultList = ShoppingList(
+        id: 'list-${DateTime.now().microsecondsSinceEpoch}',
+        familyId: familyId,
+        name: 'קניות שבועיות',
+        createdAt: DateTime.now(),
+      );
+      await _repository.saveLists(<ShoppingList>[
+        ...state.lists,
+        defaultList,
+      ]);
+      state = state.copyWith(
+        lists: <ShoppingList>[...state.lists, defaultList],
+        selectedListId: defaultList.id,
+      );
+      await _repository.saveSelectedListId(defaultList.id);
+      lists = <ShoppingList>[defaultList];
+    }
+
+    final String selected = lists.any(
+      (ShoppingList list) => list.id == state.selectedListId,
+    )
+        ? state.selectedListId!
+        : lists.first.id;
+
+    if (selected != state.selectedListId) {
+      state = state.copyWith(selectedListId: selected);
+      await _repository.saveSelectedListId(selected);
+    }
+
+    final List<ShoppingItem> migratedItems = state.items
+        .map((ShoppingItem item) =>
+            item.familyId == familyId && item.listId.isEmpty
+                ? item.copyWith(listId: selected)
+                : item)
+        .toList();
+    final List<RecurringProduct> migratedRecurring = state.recurringProducts
+        .map((RecurringProduct product) =>
+            product.familyId == familyId && product.listId.isEmpty
+                ? product.copyWith(listId: selected)
+                : product)
+        .toList();
+
+    await _repository.saveItems(migratedItems);
+    await _repository.saveRecurringProducts(migratedRecurring);
+    state = state.copyWith(
+      items: migratedItems,
+      recurringProducts: migratedRecurring,
+    );
+
+    await addDueRecurringProducts(
+      familyId,
+      automaticOnly: true,
+    );
+  }
+
+  Future<void> selectList(String listId) async {
+    state = state.copyWith(selectedListId: listId);
+    await _repository.saveSelectedListId(listId);
+  }
+
+  Future<bool> createList(String familyId, String name) async {
+    if (name.trim().length < 2) return false;
+    final ShoppingList list = ShoppingList(
+      id: 'list-${DateTime.now().microsecondsSinceEpoch}',
+      familyId: familyId,
+      name: name.trim(),
+      createdAt: DateTime.now(),
+    );
+    final List<ShoppingList> updated = <ShoppingList>[...state.lists, list];
+    await _repository.saveLists(updated);
+    state = state.copyWith(lists: updated, selectedListId: list.id);
+    await _repository.saveSelectedListId(list.id);
+    return true;
+  }
+
+  Future<void> renameList(String listId, String name) async {
+    if (name.trim().length < 2) return;
+    final List<ShoppingList> updated = state.lists
+        .map((ShoppingList list) =>
+            list.id == listId ? list.copyWith(name: name.trim()) : list)
+        .toList();
+    await _repository.saveLists(updated);
+    state = state.copyWith(lists: updated);
+  }
+
+  Future<bool> deleteList(String familyId, String listId) async {
+    final List<ShoppingList> familyLists = state.lists
+        .where((ShoppingList list) => list.familyId == familyId)
+        .toList();
+    if (familyLists.length <= 1) return false;
+
+    final List<ShoppingList> updatedLists =
+        state.lists.where((ShoppingList list) => list.id != listId).toList();
+    final List<ShoppingItem> updatedItems = state.items
+        .where((ShoppingItem item) => item.listId != listId)
+        .toList();
+    final List<RecurringProduct> updatedRecurring = state.recurringProducts
+        .where((RecurringProduct product) => product.listId != listId)
+        .toList();
+    final String next = updatedLists
+        .firstWhere((ShoppingList list) => list.familyId == familyId)
+        .id;
+
+    await _repository.saveLists(updatedLists);
+    await _repository.saveItems(updatedItems);
+    await _repository.saveRecurringProducts(updatedRecurring);
+    await _repository.saveSelectedListId(next);
+    state = state.copyWith(
+      lists: updatedLists,
+      items: updatedItems,
+      recurringProducts: updatedRecurring,
+      selectedListId: next,
+    );
+    return true;
   }
 
   Future<bool> addItem({
@@ -58,53 +203,52 @@ class ShoppingController extends StateNotifier<ShoppingState> {
     required String quantity,
     required String note,
     ShoppingCategory? category,
+    String? listId,
   }) async {
     final String normalized = name.trim();
-    if (normalized.length < 2) {
-      return false;
-    }
+    if (normalized.length < 2) return false;
+    final String targetList = listId ?? state.selectedListId ?? '';
+    if (targetList.isEmpty) return false;
 
-    final String normalizedKey = normalized.toLowerCase();
-    final ShoppingCategory preferredCategory = category ??
-        _preferredCategory(normalizedKey) ??
+    final String key = normalized.toLowerCase();
+    final ShoppingCategory selectedCategory = category ??
+        _preferredCategory(key) ??
         CategoryClassifier.classify(normalized);
 
     final int duplicateIndex = state.items.indexWhere(
       (ShoppingItem item) =>
           item.familyId == familyId &&
+          item.listId == targetList &&
           !item.isChecked &&
-          item.name.toLowerCase() == normalizedKey,
+          item.name.toLowerCase() == key,
     );
 
     if (duplicateIndex != -1) {
       final ShoppingItem existing = state.items[duplicateIndex];
-      final String mergedQuantity =
-          _mergeQuantities(existing.quantity, quantity.trim());
       final List<ShoppingItem> updated = List<ShoppingItem>.from(state.items)
         ..[duplicateIndex] = existing.copyWith(
-          quantity: mergedQuantity,
+          quantity: _mergeQuantities(existing.quantity, quantity.trim()),
           note: note.trim().isEmpty ? existing.note : note.trim(),
-          category: preferredCategory,
+          category: selectedCategory,
         );
       await _saveItems(updated);
-      await _rememberCategory(normalizedKey, preferredCategory);
+      await _rememberCategory(key, selectedCategory);
       return true;
     }
 
-    final DateTime now = DateTime.now();
     final ShoppingItem item = ShoppingItem(
-      id: now.microsecondsSinceEpoch.toString(),
+      id: DateTime.now().microsecondsSinceEpoch.toString(),
       familyId: familyId,
+      listId: targetList,
       name: normalized,
       quantity: quantity.trim(),
       note: note.trim(),
-      category: preferredCategory,
+      category: selectedCategory,
       isChecked: false,
-      createdAt: now,
+      createdAt: DateTime.now(),
     );
-
     await _saveItems(<ShoppingItem>[...state.items, item]);
-    await _rememberCategory(normalizedKey, preferredCategory);
+    await _rememberCategory(key, selectedCategory);
     return true;
   }
 
@@ -115,37 +259,27 @@ class ShoppingController extends StateNotifier<ShoppingState> {
     required String note,
     required ShoppingCategory category,
   }) async {
-    final String normalized = name.trim();
-    if (normalized.length < 2) {
-      return;
-    }
-
-    final List<ShoppingItem> updated = state.items.map(
-      (ShoppingItem item) {
-        if (item.id != itemId) {
-          return item;
-        }
-        return item.copyWith(
-          name: normalized,
-          quantity: quantity.trim(),
-          note: note.trim(),
-          category: category,
-        );
-      },
-    ).toList();
-
+    if (name.trim().length < 2) return;
+    final List<ShoppingItem> updated = state.items.map((ShoppingItem item) {
+      return item.id == itemId
+          ? item.copyWith(
+              name: name.trim(),
+              quantity: quantity.trim(),
+              note: note.trim(),
+              category: category,
+            )
+          : item;
+    }).toList();
     await _saveItems(updated);
-    await _rememberCategory(normalized.toLowerCase(), category);
+    await _rememberCategory(name.trim().toLowerCase(), category);
   }
 
   Future<void> toggleItem(String itemId) async {
-    await _saveItems(
-      state.items.map((ShoppingItem item) {
-        return item.id == itemId
-            ? item.copyWith(isChecked: !item.isChecked)
-            : item;
-      }).toList(),
-    );
+    await _saveItems(state.items.map((ShoppingItem item) {
+      return item.id == itemId
+          ? item.copyWith(isChecked: !item.isChecked)
+          : item;
+    }).toList());
   }
 
   Future<void> deleteItem(String itemId) async {
@@ -154,14 +288,13 @@ class ShoppingController extends StateNotifier<ShoppingState> {
     );
   }
 
-  Future<void> clearChecked(String familyId) async {
-    await _saveItems(
-      state.items
-          .where(
-            (ShoppingItem item) => item.familyId != familyId || !item.isChecked,
-          )
-          .toList(),
-    );
+  Future<void> clearChecked(String familyId, {String? listId}) async {
+    final String target = listId ?? state.selectedListId ?? '';
+    await _saveItems(state.items.where((ShoppingItem item) {
+      return item.familyId != familyId ||
+          item.listId != target ||
+          !item.isChecked;
+    }).toList());
   }
 
   Future<bool> addRecurringProduct({
@@ -170,50 +303,57 @@ class ShoppingController extends StateNotifier<ShoppingState> {
     required String quantity,
     required ShoppingCategory category,
     required RecurrenceCadence cadence,
+    String? listId,
+    bool autoAdd = true,
   }) async {
-    if (name.trim().length < 2) {
-      return false;
-    }
-
-    final DateTime now = DateTime.now();
+    if (name.trim().length < 2) return false;
+    final String target = listId ?? state.selectedListId ?? '';
+    if (target.isEmpty) return false;
     final RecurringProduct product = RecurringProduct(
-      id: now.microsecondsSinceEpoch.toString(),
+      id: DateTime.now().microsecondsSinceEpoch.toString(),
       familyId: familyId,
+      listId: target,
       name: name.trim(),
       quantity: quantity.trim(),
       category: category,
       cadence: cadence,
+      autoAdd: autoAdd,
       lastAddedAt: null,
     );
-
-    await _saveRecurring(
-      <RecurringProduct>[...state.recurringProducts, product],
-    );
+    await _saveRecurring(<RecurringProduct>[
+      ...state.recurringProducts,
+      product,
+    ]);
     return true;
   }
 
   Future<void> deleteRecurringProduct(String productId) async {
-    await _saveRecurring(
-      state.recurringProducts
-          .where(
-            (RecurringProduct product) => product.id != productId,
-          )
-          .toList(),
-    );
+    await _saveRecurring(state.recurringProducts
+        .where((RecurringProduct product) => product.id != productId)
+        .toList());
   }
 
-  Future<int> addDueRecurringProducts(String familyId) async {
+  Future<int> addDueRecurringProducts(
+    String familyId, {
+    bool automaticOnly = false,
+  }) async {
     final List<RecurringProduct> due = state.recurringProducts
         .where(
           (RecurringProduct product) =>
-              product.familyId == familyId && product.isDue,
+              product.familyId == familyId &&
+              product.isDue &&
+              (!automaticOnly || product.autoAdd),
         )
         .toList();
 
     int added = 0;
+    final DateTime now = DateTime.now();
+    final Set<String> processed = <String>{};
+
     for (final RecurringProduct product in due) {
       final bool success = await addItem(
         familyId: familyId,
+        listId: product.listId,
         name: product.name,
         quantity: product.quantity,
         note: '',
@@ -221,51 +361,36 @@ class ShoppingController extends StateNotifier<ShoppingState> {
       );
       if (success) {
         added++;
+        processed.add(product.id);
       }
     }
 
-    if (added > 0) {
-      final DateTime now = DateTime.now();
-      await _saveRecurring(
-        state.recurringProducts.map((RecurringProduct product) {
-          if (due.any(
-            (RecurringProduct dueProduct) => dueProduct.id == product.id,
-          )) {
-            return product.copyWith(lastAddedAt: now);
-          }
-          return product;
-        }).toList(),
-      );
+    if (processed.isNotEmpty) {
+      await _saveRecurring(state.recurringProducts
+          .map(
+            (RecurringProduct product) => processed.contains(product.id)
+                ? product.copyWith(lastAddedAt: now)
+                : product,
+          )
+          .toList());
     }
     return added;
   }
 
   Future<void> _saveItems(List<ShoppingItem> items) async {
     await _repository.saveItems(items);
-    state = ShoppingState(
-      items: items,
-      recurringProducts: state.recurringProducts,
-      categoryPreferences: state.categoryPreferences,
-    );
+    state = state.copyWith(items: items);
   }
 
-  Future<void> _saveRecurring(
-    List<RecurringProduct> products,
-  ) async {
+  Future<void> _saveRecurring(List<RecurringProduct> products) async {
     await _repository.saveRecurringProducts(products);
-    state = ShoppingState(
-      items: state.items,
-      recurringProducts: products,
-      categoryPreferences: state.categoryPreferences,
-    );
+    state = state.copyWith(recurringProducts: products);
   }
 
   ShoppingCategory? _preferredCategory(String productName) {
     for (final ProductCategoryPreference preference
         in state.categoryPreferences) {
-      if (preference.productName == productName) {
-        return preference.category;
-      }
+      if (preference.productName == productName) return preference.category;
     }
     return null;
   }
@@ -275,96 +400,100 @@ class ShoppingController extends StateNotifier<ShoppingState> {
     ShoppingCategory category,
   ) async {
     final List<ProductCategoryPreference> updated = state.categoryPreferences
-        .where(
-          (ProductCategoryPreference preference) =>
-              preference.productName != productName,
-        )
+        .where((ProductCategoryPreference p) => p.productName != productName)
         .toList()
-      ..add(
-        ProductCategoryPreference(
-          productName: productName,
-          category: category,
-        ),
-      );
-
+      ..add(ProductCategoryPreference(
+        productName: productName,
+        category: category,
+      ));
     await _repository.saveCategoryPreferences(updated);
-    state = ShoppingState(
-      items: state.items,
-      recurringProducts: state.recurringProducts,
-      categoryPreferences: updated,
-    );
+    state = state.copyWith(categoryPreferences: updated);
   }
 
   String _mergeQuantities(String first, String second) {
-    final int? firstNumber = int.tryParse(first.trim());
-    final int? secondNumber = int.tryParse(second.trim());
-    if (firstNumber != null && secondNumber != null) {
-      return (firstNumber + secondNumber).toString();
-    }
-    if (first.trim().isEmpty) {
-      return second.trim();
-    }
-    if (second.trim().isEmpty) {
-      return first.trim();
-    }
-    if (first.trim() == second.trim()) {
-      return first.trim();
-    }
-    return '${first.trim()} + ${second.trim()}';
+    final int? a = int.tryParse(first.trim());
+    final int? b = int.tryParse(second.trim());
+    if (a != null && b != null) return (a + b).toString();
+    if (first.trim().isEmpty) return second.trim();
+    if (second.trim().isEmpty) return first.trim();
+    return first.trim() == second.trim()
+        ? first.trim()
+        : '${first.trim()} + ${second.trim()}';
   }
 }
 
 final Provider<ShoppingRepository> shoppingRepositoryProvider =
-    Provider<ShoppingRepository>(
-  (Ref ref) => LocalShoppingRepository(),
-);
+    Provider<ShoppingRepository>((Ref ref) => LocalShoppingRepository());
 
 final StateNotifierProvider<ShoppingController, ShoppingState>
     shoppingControllerProvider =
     StateNotifierProvider<ShoppingController, ShoppingState>(
-  (Ref ref) => ShoppingController(
-    ref.watch(shoppingRepositoryProvider),
-  ),
+  (Ref ref) => ShoppingController(ref.watch(shoppingRepositoryProvider)),
 );
+
+final Provider<List<ShoppingList>> activeFamilyShoppingListsProvider =
+    Provider<List<ShoppingList>>((Ref ref) {
+  final String? familyId = ref.watch(familyControllerProvider).activeFamilyId;
+  if (familyId == null) return <ShoppingList>[];
+  return ref
+      .watch(shoppingControllerProvider)
+      .lists
+      .where((ShoppingList list) => list.familyId == familyId)
+      .toList();
+});
+
+final Provider<ShoppingList?> activeShoppingListProvider =
+    Provider<ShoppingList?>((Ref ref) {
+  final ShoppingState state = ref.watch(shoppingControllerProvider);
+  final String? familyId = ref.watch(familyControllerProvider).activeFamilyId;
+  if (familyId == null) return null;
+  for (final ShoppingList list in state.lists) {
+    if (list.familyId == familyId && list.id == state.selectedListId) {
+      return list;
+    }
+  }
+  return null;
+});
 
 final Provider<List<ShoppingItem>> activeFamilyShoppingItemsProvider =
     Provider<List<ShoppingItem>>((Ref ref) {
   final String? familyId = ref.watch(familyControllerProvider).activeFamilyId;
-  final List<ShoppingItem> items = ref.watch(shoppingControllerProvider).items;
+  final String? listId = ref.watch(activeShoppingListProvider)?.id;
+  if (familyId == null || listId == null) return <ShoppingItem>[];
+  final List<ShoppingItem> items = ref
+      .watch(shoppingControllerProvider)
+      .items
+      .where((ShoppingItem item) =>
+          item.familyId == familyId && item.listId == listId)
+      .toList()
+    ..sort((ShoppingItem a, ShoppingItem b) {
+      if (a.category.sortOrder != b.category.sortOrder) {
+        return a.category.sortOrder.compareTo(b.category.sortOrder);
+      }
+      if (a.isChecked != b.isChecked) return a.isChecked ? 1 : -1;
+      return a.createdAt.compareTo(b.createdAt);
+    });
+  return items;
+});
 
-  if (familyId == null) {
-    return <ShoppingItem>[];
-  }
-
-  final List<ShoppingItem> filtered =
-      items.where((ShoppingItem item) => item.familyId == familyId).toList()
-        ..sort((ShoppingItem first, ShoppingItem second) {
-          final int categoryOrder =
-              first.category.sortOrder.compareTo(second.category.sortOrder);
-          if (categoryOrder != 0) {
-            return categoryOrder;
-          }
-          if (first.isChecked != second.isChecked) {
-            return first.isChecked ? 1 : -1;
-          }
-          return first.createdAt.compareTo(second.createdAt);
-        });
-  return filtered;
+final Provider<List<ShoppingItem>> allActiveFamilyShoppingItemsProvider =
+    Provider<List<ShoppingItem>>((Ref ref) {
+  final String? familyId = ref.watch(familyControllerProvider).activeFamilyId;
+  if (familyId == null) return <ShoppingItem>[];
+  return ref
+      .watch(shoppingControllerProvider)
+      .items
+      .where((ShoppingItem item) => item.familyId == familyId)
+      .toList();
 });
 
 final Provider<List<RecurringProduct>> activeFamilyRecurringProductsProvider =
     Provider<List<RecurringProduct>>((Ref ref) {
   final String? familyId = ref.watch(familyControllerProvider).activeFamilyId;
-  final List<RecurringProduct> products =
-      ref.watch(shoppingControllerProvider).recurringProducts;
-
-  if (familyId == null) {
-    return <RecurringProduct>[];
-  }
-
-  return products
-      .where(
-        (RecurringProduct product) => product.familyId == familyId,
-      )
+  if (familyId == null) return <RecurringProduct>[];
+  return ref
+      .watch(shoppingControllerProvider)
+      .recurringProducts
+      .where((RecurringProduct product) => product.familyId == familyId)
       .toList();
 });

@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.9.1
+- Added the missing shopping-list repository methods to the dashboard test.
+- Removed the analyzer warning caused by the incomplete test fixture.
+- No application behavior changes.
+
+## 1.9.0
+- Added multiple shopping lists per family.
+- Added list creation, selection, rename and deletion.
+- Added per-list shopping and supermarket mode.
+- Assigned recurring products to a target list.
+- Added automatic recurring-product insertion when shopping opens.
+- Added calendar-month recurrence and duplicate prevention.
+
 ## 1.8.5
 - Fixed the conditional dashboard-only floating action button syntax.
 - Quick add remains visible only on the dashboard.

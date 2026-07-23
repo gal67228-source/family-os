@@ -35,11 +35,14 @@ class _AddShoppingItemScreenState extends ConsumerState<AddShoppingItemScreen> {
   @override
   Widget build(BuildContext context) {
     final String? familyId = ref.watch(familyControllerProvider).activeFamilyId;
+    final activeList = ref.watch(activeShoppingListProvider);
 
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
-        appBar: AppBar(title: const Text('הוספת מוצר')),
+        appBar: AppBar(
+          title: Text('הוספת מוצר · ${activeList?.name ?? ''}'),
+        ),
         body: ListView(
           padding: const EdgeInsets.all(16),
           children: <Widget>[

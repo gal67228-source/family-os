@@ -20,6 +20,13 @@ class RecurringProductsScreen extends ConsumerStatefulWidget {
 
 class _RecurringProductsScreenState
     extends ConsumerState<RecurringProductsScreen> {
+  String _listName(List<dynamic> lists, String listId) {
+    for (final dynamic list in lists) {
+      if (list.id == listId) return list.name as String;
+    }
+    return 'רשימה';
+  }
+
   final TextEditingController _name = TextEditingController();
   final TextEditingController _quantity = TextEditingController();
   RecurrenceCadence _cadence = RecurrenceCadence.weekly;
@@ -36,6 +43,8 @@ class _RecurringProductsScreenState
     final String? familyId = ref.watch(familyControllerProvider).activeFamilyId;
     final List<RecurringProduct> products =
         ref.watch(activeFamilyRecurringProductsProvider);
+    final lists = ref.watch(activeFamilyShoppingListsProvider);
+    String? targetListId = ref.watch(activeShoppingListProvider)?.id;
     final int dueCount =
         products.where((RecurringProduct product) => product.isDue).length;
 
@@ -59,6 +68,22 @@ class _RecurringProductsScreenState
                     controller: _quantity,
                     label: 'כמות',
                     icon: Icons.numbers_rounded,
+                  ),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<String>(
+                    initialValue: targetListId,
+                    decoration: const InputDecoration(labelText: 'רשימת יעד'),
+                    items: lists
+                        .map(
+                          (list) => DropdownMenuItem<String>(
+                            value: list.id,
+                            child: Text(list.name),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (String? value) {
+                      targetListId = value;
+                    },
                   ),
                   const SizedBox(height: 12),
                   DropdownButtonFormField<RecurrenceCadence>(
@@ -100,6 +125,8 @@ class _RecurringProductsScreenState
                                       _name.text,
                                     ),
                                     cadence: _cadence,
+                                    listId: targetListId,
+                                    autoAdd: true,
                                   );
                               if (success) {
                                 _name.clear();
@@ -115,30 +142,20 @@ class _RecurringProductsScreenState
             ),
             if (products.isNotEmpty) ...<Widget>[
               const SizedBox(height: 14),
-              FilledButton.icon(
-                onPressed: familyId == null || dueCount == 0
-                    ? null
-                    : () async {
-                        final int added = await ref
-                            .read(shoppingControllerProvider.notifier)
-                            .addDueRecurringProducts(familyId);
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                added == 0
-                                    ? 'לא נוספו מוצרים חדשים'
-                                    : 'נוספו $added מוצרים לרשימה',
-                              ),
-                            ),
-                          );
-                        }
-                      },
-                icon: const Icon(Icons.playlist_add_rounded),
-                label: Text(
-                  dueCount == 0
-                      ? 'אין מוצרים שהגיע זמנם'
-                      : 'הוסף $dueCount מוצרים שהגיע זמנם',
+              AppCard(
+                child: Row(
+                  children: <Widget>[
+                    const Icon(Icons.autorenew_rounded),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        dueCount == 0
+                            ? 'כל המוצרים הקבועים מעודכנים'
+                            : '$dueCount מוצרים יתווספו אוטומטית '
+                                'בפתיחת מסך הקניות',
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -176,7 +193,8 @@ class _RecurringProductsScreenState
                             Text(
                               '${product.quantity.isEmpty ? 'ללא כמות' : product.quantity} · '
                               '${product.category.label} · '
-                              '${product.cadence.label}',
+                              '${product.cadence.label} · '
+                              '${_listName(lists, product.listId)}',
                             ),
                           ],
                         ),

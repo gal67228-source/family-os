@@ -12,7 +12,7 @@ final Provider<DashboardSummary> dashboardSummaryProvider =
   final FamilyState familyState = ref.watch(familyControllerProvider);
   final List<FamilyTask> tasks = ref.watch(activeFamilyTasksProvider);
   final List<ShoppingItem> shopping =
-      ref.watch(activeFamilyShoppingItemsProvider);
+      ref.watch(allActiveFamilyShoppingItemsProvider);
 
   return DashboardSummary(
     openTasks: tasks.where((FamilyTask task) => !task.isCompleted).length,
