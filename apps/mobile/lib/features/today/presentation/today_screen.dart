@@ -135,6 +135,22 @@ class TodayScreen extends ConsumerWidget {
                               trailing: const Icon(Icons.chevron_left_rounded),
                               onTap: () => context.go('/tasks'),
                             ),
+                            ListTile(
+                              leading: const CircleAvatar(
+                                backgroundColor: AppColors.softOrange,
+                                child: Icon(
+                                  Icons.calendar_month_rounded,
+                                  color: AppColors.accent,
+                                ),
+                              ),
+                              title: const Text('פתח יומן משפחתי'),
+                              subtitle: const Text(
+                                'אירועים, תורים וחופשות במקום אחד',
+                              ),
+                              trailing: const Icon(Icons.chevron_left_rounded),
+                              onTap: () => context.push('/calendar'),
+                            ),
+                            const Divider(height: 1),
                             const Divider(height: 1),
                             ListTile(
                               leading: const CircleAvatar(

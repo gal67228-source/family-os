@@ -1,5 +1,22 @@
 # Changelog
 
+## 2.1.2
+- Fixed the weekday header cell to allow a runtime day label.
+- No feature changes.
+
+## 2.1.1
+- Fixed the non-constant weekday row in the calendar month view.
+- Removed an unused calendar screen import.
+- No feature changes.
+
+## 2.1.0
+- Added a persistent family calendar.
+- Added monthly calendar view and daily event list.
+- Added event creation, editing and deletion.
+- Added event types, colors, participants, recurrence and reminder settings.
+- Added calendar entry points from Dashboard and More.
+- Added calendar controller tests.
+
 ## 1.10.1
 - Fixed archived-list selection after moving a list to the archive.
 - Replaced deprecated ReorderableListView onReorder with onReorderItem.

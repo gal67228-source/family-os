@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import '../features/auth/presentation/forgot_password_screen.dart';
 import '../features/auth/presentation/login_screen.dart';
 import '../features/auth/presentation/register_screen.dart';
+import '../features/calendar/presentation/calendar_screen.dart';
+import '../features/calendar/presentation/edit_calendar_event_screen.dart';
 import '../features/families/presentation/create_family_screen.dart';
 import '../features/families/presentation/family_setup_screen.dart';
 import '../features/families/presentation/invite_family_screen.dart';
@@ -132,6 +134,29 @@ final GoRouter appRouter = GoRouter(
       path: '/shopping/archive',
       builder: (BuildContext context, GoRouterState state) {
         return const ArchivedShoppingListsScreen();
+      },
+    ),
+    GoRoute(
+      path: '/calendar',
+      builder: (BuildContext context, GoRouterState state) {
+        return const CalendarScreen();
+      },
+    ),
+    GoRoute(
+      path: '/calendar/new',
+      builder: (BuildContext context, GoRouterState state) {
+        final String? rawDate = state.uri.queryParameters['date'];
+        return EditCalendarEventScreen(
+          initialDate: DateTime.tryParse(rawDate ?? ''),
+        );
+      },
+    ),
+    GoRoute(
+      path: '/calendar/edit/:eventId',
+      builder: (BuildContext context, GoRouterState state) {
+        return EditCalendarEventScreen(
+          eventId: state.pathParameters['eventId'],
+        );
       },
     ),
     StatefulShellRoute.indexedStack(
