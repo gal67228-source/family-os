@@ -4,6 +4,9 @@ import 'package:family_os/features/families/data/family_repository.dart';
 import 'package:family_os/features/families/domain/family_icon.dart';
 import 'package:family_os/features/families/domain/family_member.dart';
 import 'package:family_os/features/families/domain/family_workspace.dart';
+import 'package:family_os/features/tasks/application/task_controller.dart';
+import 'package:family_os/features/tasks/data/task_repository.dart';
+import 'package:family_os/features/tasks/domain/family_task.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -45,6 +48,14 @@ class _MemoryFamilyRepository implements FamilyRepository {
   Future<void> saveFamilies(List<FamilyWorkspace> families) async {}
 }
 
+class _MemoryTaskRepository implements TaskRepository {
+  @override
+  Future<List<FamilyTask>> loadTasks() async => <FamilyTask>[];
+
+  @override
+  Future<void> saveTasks(List<FamilyTask> tasks) async {}
+}
+
 void main() {
   test('dashboard summary reflects active family member count', () async {
     final ProviderContainer container = ProviderContainer(
@@ -52,15 +63,20 @@ void main() {
         familyRepositoryProvider.overrideWithValue(
           _MemoryFamilyRepository(),
         ),
+        taskRepositoryProvider.overrideWithValue(
+          _MemoryTaskRepository(),
+        ),
       ],
     );
     addTearDown(container.dispose);
 
     await container.read(familyControllerProvider.notifier).load();
+    await container.read(taskControllerProvider.notifier).load();
 
     final summary = container.read(dashboardSummaryProvider);
     expect(summary.familyMembers, 2);
     expect(summary.openTasks, 0);
+    expect(summary.overdueTasks, 0);
     expect(summary.shoppingItems, 0);
   });
 }

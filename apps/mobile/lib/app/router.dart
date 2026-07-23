@@ -13,6 +13,7 @@ import '../features/families/presentation/switch_family_screen.dart';
 import '../features/more/presentation/more_screen.dart';
 import '../features/shopping/presentation/shopping_screen.dart';
 import '../features/splash/presentation/splash_screen.dart';
+import '../features/tasks/presentation/create_task_screen.dart';
 import '../features/tasks/presentation/tasks_screen.dart';
 import '../features/today/presentation/today_screen.dart';
 import 'shell_screen.dart';
@@ -81,6 +82,12 @@ final GoRouter appRouter = GoRouter(
       path: '/family/switch',
       builder: (BuildContext context, GoRouterState state) {
         return const SwitchFamilyScreen();
+      },
+    ),
+    GoRoute(
+      path: '/tasks/new',
+      builder: (BuildContext context, GoRouterState state) {
+        return const CreateTaskScreen();
       },
     ),
     StatefulShellRoute.indexedStack(

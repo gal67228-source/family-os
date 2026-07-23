@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.6.1
+- Removed the undeclared `intl` dependency from task screens.
+- Added local `dd/MM/yyyy` date formatting.
+- Resolved the `TextDirection.rtl` name collision.
+
 ## 1.4.1
 - Redirected successful family creation to the dashboard.
 - Redirected successful family joining to the dashboard.
