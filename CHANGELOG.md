@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.0.1
+- Fixed the Android Gradle Kotlin DSL patch for core library desugaring.
+- Replaced literal escaped newline characters with valid Gradle lines.
+- No notification feature changes.
+
 ## 3.0.0
 - Added local notifications for calendar events.
 - Added task due-date reminders.

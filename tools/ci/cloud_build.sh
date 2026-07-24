@@ -172,13 +172,13 @@ gradle = Path("android/app/build.gradle.kts")
 gradle_text = gradle.read_text(encoding="utf-8")
 gradle_text = gradle_text.replace(
     "sourceCompatibility = JavaVersion.VERSION_17",
-    "sourceCompatibility = JavaVersion.VERSION_17\\n"
+    "sourceCompatibility = JavaVersion.VERSION_17\n"
     "        isCoreLibraryDesugaringEnabled = true",
 )
 if "desugar_jdk_libs" not in gradle_text:
     gradle_text = gradle_text.replace(
         "dependencies {",
-        'dependencies {\\n'
+        'dependencies {\n'
         '    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")',
     )
 gradle.write_text(gradle_text, encoding="utf-8")
