@@ -1,5 +1,11 @@
 # Changelog
 
+## 3.0.2
+- Fixed Android core library desugaring dependency setup.
+- The cloud build now creates a dependencies block when Flutter does not generate one.
+- Prevented enabling desugaring without the required desugar_jdk_libs dependency.
+- No notification feature changes.
+
 ## 3.0.1
 - Fixed the Android Gradle Kotlin DSL patch for core library desugaring.
 - Replaced literal escaped newline characters with valid Gradle lines.

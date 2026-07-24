@@ -170,17 +170,36 @@ manifest.write_text(text, encoding="utf-8")
 
 gradle = Path("android/app/build.gradle.kts")
 gradle_text = gradle.read_text(encoding="utf-8")
-gradle_text = gradle_text.replace(
-    "sourceCompatibility = JavaVersion.VERSION_17",
-    "sourceCompatibility = JavaVersion.VERSION_17\n"
-    "        isCoreLibraryDesugaringEnabled = true",
-)
-if "desugar_jdk_libs" not in gradle_text:
+
+if "isCoreLibraryDesugaringEnabled = true" not in gradle_text:
     gradle_text = gradle_text.replace(
-        "dependencies {",
-        'dependencies {\n'
-        '    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")',
+        "sourceCompatibility = JavaVersion.VERSION_17",
+        "sourceCompatibility = JavaVersion.VERSION_17\n"
+        "        isCoreLibraryDesugaringEnabled = true",
+        1,
     )
+
+dependency_line = (
+    '    coreLibraryDesugaring('
+    '"com.android.tools:desugar_jdk_libs:2.1.4"'
+    ')'
+)
+
+if "desugar_jdk_libs" not in gradle_text:
+    if "dependencies {" in gradle_text:
+        gradle_text = gradle_text.replace(
+            "dependencies {",
+            "dependencies {\n" + dependency_line,
+            1,
+        )
+    else:
+        gradle_text = (
+            gradle_text.rstrip()
+            + "\n\ndependencies {\n"
+            + dependency_line
+            + "\n}\n"
+        )
+
 gradle.write_text(gradle_text, encoding="utf-8")
 
 info = Path("ios/Runner/Info.plist")
