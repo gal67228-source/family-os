@@ -50,13 +50,21 @@ class _NotificationCoordinatorState
         !shopping.isLoading &&
         signature != _lastSignature) {
       _lastSignature = signature;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        NotificationService.instance.sync(
-          events: calendar.events,
-          tasks: tasks.tasks,
-          recurringProducts: shopping.recurringProducts,
-          shoppingItems: shopping.items,
-        );
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        try {
+          await NotificationService.instance
+              .initialize()
+              .timeout(const Duration(seconds: 4));
+
+          await NotificationService.instance.sync(
+            events: calendar.events,
+            tasks: tasks.tasks,
+            recurringProducts: shopping.recurringProducts,
+            shoppingItems: shopping.items,
+          );
+        } catch (_) {
+          // Notifications must never block or crash the application UI.
+        }
       });
     }
 

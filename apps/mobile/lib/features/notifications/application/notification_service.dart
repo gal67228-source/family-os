@@ -30,16 +30,23 @@ class NotificationService {
 
   NotificationRouteHandler? _routeHandler;
   bool _initialized = false;
+  Future<void>? _initializationFuture;
+
+  bool get isInitialized => _initialized;
 
   Future<void> initialize({
     NotificationRouteHandler? onOpenRoute,
-  }) async {
+  }) {
+    _routeHandler = onOpenRoute ?? _routeHandler;
+
     if (_initialized) {
-      _routeHandler = onOpenRoute ?? _routeHandler;
-      return;
+      return Future<void>.value();
     }
 
-    _routeHandler = onOpenRoute;
+    return _initializationFuture ??= _initializeInternal();
+  }
+
+  Future<void> _initializeInternal() async {
     tz.initializeTimeZones();
 
     try {
@@ -52,9 +59,9 @@ class NotificationService {
     const AndroidInitializationSettings android =
         AndroidInitializationSettings('ic_notification');
     const DarwinInitializationSettings darwin = DarwinInitializationSettings(
-      requestAlertPermission: true,
-      requestBadgePermission: true,
-      requestSoundPermission: true,
+      requestAlertPermission: false,
+      requestBadgePermission: false,
+      requestSoundPermission: false,
     );
     const InitializationSettings settings = InitializationSettings(
       android: android,
@@ -71,14 +78,8 @@ class NotificationService {
       },
     );
 
-    if (Platform.isAndroid) {
-      await _plugin
-          .resolvePlatformSpecificImplementation<
-              AndroidFlutterLocalNotificationsPlugin>()
-          ?.requestNotificationsPermission();
-    }
-
     _initialized = true;
+    _initializationFuture = null;
   }
 
   Future<bool> requestPermissions() async {

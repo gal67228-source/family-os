@@ -1,5 +1,12 @@
 # Changelog
 
+## 3.0.3
+- Fixed the application being stuck on the native black launch screen.
+- Flutter now renders before notification initialization begins.
+- Added a startup timeout and error isolation for notification setup.
+- Notification permissions are now requested only from the settings screen.
+- Prevented duplicate concurrent notification plugin initialization.
+
 ## 3.0.2
 - Fixed Android core library desugaring dependency setup.
 - The cloud build now creates a dependencies block when Flutter does not generate one.
