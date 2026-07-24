@@ -9,6 +9,7 @@ import '../../families/application/family_controller.dart';
 import '../../families/domain/family_member.dart';
 import '../application/task_controller.dart';
 import '../domain/family_task.dart';
+import '../../notifications/application/notification_service.dart';
 
 class CreateTaskScreen extends ConsumerStatefulWidget {
   const CreateTaskScreen({super.key});
@@ -22,6 +23,7 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
 
   TaskPriority _priority = TaskPriority.medium;
   TaskRecurrence _recurrence = TaskRecurrence.none;
+  TaskReminder _reminder = TaskReminder.atTime;
   DateTime _dueDate = DateTime.now();
   String _assigneeId = '';
   bool _hasDueTime = false;
@@ -230,6 +232,27 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
                         }
                       },
                     ),
+                    const SizedBox(height: 16),
+                    DropdownButtonFormField<TaskReminder>(
+                      initialValue: _reminder,
+                      decoration: const InputDecoration(
+                        labelText: 'תזכורת',
+                        prefixIcon: Icon(Icons.notifications_active_rounded),
+                      ),
+                      items: TaskReminder.values.map(
+                        (TaskReminder reminder) {
+                          return DropdownMenuItem<TaskReminder>(
+                            value: reminder,
+                            child: Text(reminder.label),
+                          );
+                        },
+                      ).toList(),
+                      onChanged: (TaskReminder? value) {
+                        if (value != null) {
+                          setState(() => _reminder = value);
+                        }
+                      },
+                    ),
                   ],
                 ),
               ),
@@ -248,7 +271,27 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
                             dueDate: _dueDate,
                             hasDueTime: _hasDueTime,
                             recurrence: _recurrence,
+                            reminder: _reminder,
                           );
+
+                  if (ok) {
+                    await NotificationService.instance.initialize();
+
+                    if (_reminder != TaskReminder.none) {
+                      final bool granted = await NotificationService.instance
+                          .requestPermissions();
+
+                      if (!granted && context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'המשימה נשמרה, אך הרשאת ההתראות חסומה.',
+                            ),
+                          ),
+                        );
+                      }
+                    }
+                  }
 
                   if (ok && context.mounted) {
                     context.pop();

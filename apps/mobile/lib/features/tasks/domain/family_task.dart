@@ -13,6 +13,39 @@ extension TaskPriorityLabel on TaskPriority {
   }
 }
 
+enum TaskReminder { none, atTime, tenMinutes, oneHour, oneDay }
+
+extension TaskReminderLabel on TaskReminder {
+  String get label {
+    switch (this) {
+      case TaskReminder.none:
+        return 'ללא תזכורת';
+      case TaskReminder.atTime:
+        return 'בזמן היעד';
+      case TaskReminder.tenMinutes:
+        return '10 דקות לפני';
+      case TaskReminder.oneHour:
+        return 'שעה לפני';
+      case TaskReminder.oneDay:
+        return 'יום לפני';
+    }
+  }
+
+  Duration get offset {
+    switch (this) {
+      case TaskReminder.none:
+      case TaskReminder.atTime:
+        return Duration.zero;
+      case TaskReminder.tenMinutes:
+        return const Duration(minutes: 10);
+      case TaskReminder.oneHour:
+        return const Duration(hours: 1);
+      case TaskReminder.oneDay:
+        return const Duration(days: 1);
+    }
+  }
+}
+
 enum TaskRecurrence { none, daily, weekly, monthly }
 
 extension TaskRecurrenceLabel on TaskRecurrence {
@@ -65,6 +98,7 @@ class FamilyTask {
     required this.dueDate,
     required this.hasDueTime,
     required this.recurrence,
+    required this.reminder,
     required this.isCompleted,
     required this.completedAt,
     required this.createdAt,
@@ -79,6 +113,7 @@ class FamilyTask {
   final DateTime dueDate;
   final bool hasDueTime;
   final TaskRecurrence recurrence;
+  final TaskReminder reminder;
   final bool isCompleted;
   final DateTime? completedAt;
   final DateTime createdAt;
@@ -110,6 +145,7 @@ class FamilyTask {
     DateTime? dueDate,
     bool? hasDueTime,
     TaskRecurrence? recurrence,
+    TaskReminder? reminder,
     bool? isCompleted,
     DateTime? completedAt,
     bool clearCompletedAt = false,
@@ -124,6 +160,7 @@ class FamilyTask {
       dueDate: dueDate ?? this.dueDate,
       hasDueTime: hasDueTime ?? this.hasDueTime,
       recurrence: recurrence ?? this.recurrence,
+      reminder: reminder ?? this.reminder,
       isCompleted: isCompleted ?? this.isCompleted,
       completedAt: clearCompletedAt ? null : completedAt ?? this.completedAt,
       createdAt: createdAt,
@@ -140,6 +177,7 @@ class FamilyTask {
         'dueDate': dueDate.toIso8601String(),
         'hasDueTime': hasDueTime,
         'recurrence': recurrence.name,
+        'reminder': reminder.name,
         'isCompleted': isCompleted,
         'completedAt': completedAt?.toIso8601String(),
         'createdAt': createdAt.toIso8601String(),
@@ -150,6 +188,8 @@ class FamilyTask {
         json['priority'] as String? ?? TaskPriority.medium.name;
     final String recurrenceName =
         json['recurrence'] as String? ?? TaskRecurrence.none.name;
+    final String reminderName =
+        json['reminder'] as String? ?? TaskReminder.atTime.name;
 
     return FamilyTask(
       id: json['id'] as String? ?? '',
@@ -167,6 +207,10 @@ class FamilyTask {
       recurrence: TaskRecurrence.values.firstWhere(
         (TaskRecurrence value) => value.name == recurrenceName,
         orElse: () => TaskRecurrence.none,
+      ),
+      reminder: TaskReminder.values.firstWhere(
+        (TaskReminder value) => value.name == reminderName,
+        orElse: () => TaskReminder.atTime,
       ),
       isCompleted: json['isCompleted'] as bool? ?? false,
       completedAt: DateTime.tryParse(json['completedAt'] as String? ?? ''),

@@ -49,7 +49,6 @@ class _NotificationCoordinatorState
         !tasks.isLoading &&
         !shopping.isLoading &&
         signature != _lastSignature) {
-      _lastSignature = signature;
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         try {
           await NotificationService.instance
@@ -62,6 +61,8 @@ class _NotificationCoordinatorState
             recurringProducts: shopping.recurringProducts,
             shoppingItems: shopping.items,
           );
+
+          _lastSignature = signature;
         } catch (_) {
           // Notifications must never block or crash the application UI.
         }

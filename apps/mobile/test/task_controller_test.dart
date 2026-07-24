@@ -31,6 +31,7 @@ void main() {
         dueDate: DateTime(2030, 1, 1, 10),
         hasDueTime: true,
         recurrence: TaskRecurrence.none,
+        reminder: TaskReminder.atTime,
       ),
       isTrue,
     );
@@ -57,6 +58,7 @@ void main() {
       dueDate: DateTime(2030, 1, 1),
       hasDueTime: false,
       recurrence: TaskRecurrence.weekly,
+      reminder: TaskReminder.atTime,
     );
 
     final String id = controller.state.tasks.single.id;

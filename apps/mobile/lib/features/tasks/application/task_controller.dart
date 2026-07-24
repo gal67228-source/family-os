@@ -44,6 +44,7 @@ class TaskController extends StateNotifier<TaskState> {
     required DateTime dueDate,
     required bool hasDueTime,
     required TaskRecurrence recurrence,
+    required TaskReminder reminder,
   }) async {
     if (title.trim().length < 2) {
       return false;
@@ -60,6 +61,7 @@ class TaskController extends StateNotifier<TaskState> {
       dueDate: dueDate,
       hasDueTime: hasDueTime,
       recurrence: recurrence,
+      reminder: reminder,
       isCompleted: false,
       completedAt: null,
       createdAt: now,
@@ -109,6 +111,7 @@ class TaskController extends StateNotifier<TaskState> {
             dueDate: nextDate,
             hasDueTime: task.hasDueTime,
             recurrence: task.recurrence,
+            reminder: task.reminder,
             isCompleted: false,
             completedAt: null,
             createdAt: DateTime.now(),

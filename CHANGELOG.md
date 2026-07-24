@@ -1,5 +1,21 @@
 # Changelog
 
+## 3.0.5
+- Requests notification permission shortly after application startup.
+- Fixed calendar event reminders being skipped when the selected lead time had already passed.
+- All-day events are scheduled at 09:00 and still notify when created for today.
+- Notification synchronization now initializes the plugin before scheduling.
+- The coordinator records a sync only after it succeeds.
+
+## 3.0.4
+- Added explicit reminder selection to new tasks.
+- Task reminders can run at the due time, 10 minutes, one hour or one day before.
+- Fixed nearby tasks being silently skipped when the one-hour reminder time had passed.
+- Tasks created for today without a time now receive a near-immediate reminder.
+- Notification permission is requested when saving a task with a reminder.
+- Permission checks now send a visible test notification.
+- Added backward-compatible defaults for existing saved tasks.
+
 ## 3.0.3
 - Fixed the application being stuck on the native black launch screen.
 - Flutter now renders before notification initialization begins.

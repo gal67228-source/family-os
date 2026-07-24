@@ -205,12 +205,17 @@ class _NotificationSettingsScreenState
                       final bool granted = await NotificationService.instance
                           .requestPermissions();
 
+                      if (granted) {
+                        await NotificationService.instance
+                            .showTestNotification();
+                      }
+
                       if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text(
                               granted
-                                  ? 'הרשאת ההתראות פעילה'
+                                  ? 'ההרשאה פעילה ונשלחה התראת בדיקה'
                                   : 'הרשאת ההתראות לא אושרה',
                             ),
                           ),

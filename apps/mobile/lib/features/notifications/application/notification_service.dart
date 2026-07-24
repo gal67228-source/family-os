@@ -83,6 +83,7 @@ class NotificationService {
   }
 
   Future<bool> requestPermissions() async {
+    await initialize();
     bool granted = true;
 
     if (Platform.isAndroid) {
@@ -117,6 +118,7 @@ class NotificationService {
   }
 
   Future<void> showTestNotification() async {
+    await initialize();
     await _plugin.show(
       999999,
       'Family OS',
@@ -132,9 +134,7 @@ class NotificationService {
     required List<RecurringProduct> recurringProducts,
     required List<ShoppingItem> shoppingItems,
   }) async {
-    if (!_initialized) {
-      return;
-    }
+    await initialize();
 
     final NotificationSettings settings = await _settingsRepository.load();
 
@@ -186,22 +186,47 @@ class NotificationService {
       CalendarReminder.oneWeek => const Duration(days: 7),
     };
 
-    DateTime occurrence = event.start;
     final DateTime now = DateTime.now();
+    DateTime occurrence = event.isAllDay
+        ? DateTime(
+            event.start.year,
+            event.start.month,
+            event.start.day,
+            9,
+          )
+        : event.start;
 
     if (event.recurrence != CalendarRecurrence.none &&
         occurrence.isBefore(now)) {
-      occurrence = _nextEventOccurrence(event, now);
+      occurrence = _nextEventOccurrence(
+        event.copyWith(start: occurrence),
+        now,
+      );
     }
 
-    final DateTime scheduled = occurrence.subtract(offset);
+    DateTime scheduled = occurrence.subtract(offset);
+
+    // If the chosen reminder lead time already passed but the event itself
+    // is still upcoming, remind at the actual event time instead.
+    if (!scheduled.isAfter(now) && occurrence.isAfter(now)) {
+      scheduled = occurrence;
+    }
+
+    // An all-day event created for today should still produce a useful
+    // reminder shortly after saving.
+    if (event.isAllDay &&
+        _sameDate(event.start, now) &&
+        !scheduled.isAfter(now)) {
+      scheduled = now.add(const Duration(seconds: 8));
+    }
+
     if (!scheduled.isAfter(now)) {
       return;
     }
 
     await _schedule(
       id: _stableId('event-${event.id}'),
-      title: 'אירוע מתקרב',
+      title: scheduled == occurrence ? 'האירוע מתחיל עכשיו' : 'אירוע מתקרב',
       body: event.title,
       date: scheduled,
       payload: '/calendar/edit/${event.id}',
@@ -247,28 +272,45 @@ class NotificationService {
   }
 
   Future<void> _scheduleTask(FamilyTask task) async {
-    if (task.isCompleted) {
+    if (task.isCompleted || task.reminder == TaskReminder.none) {
       return;
     }
 
+    final DateTime now = DateTime.now();
     final DateTime due = task.hasDueTime
         ? task.dueDate
         : DateTime(
             task.dueDate.year,
             task.dueDate.month,
             task.dueDate.day,
-            8,
+            9,
           );
-    final DateTime scheduled =
-        task.hasDueTime ? due.subtract(const Duration(hours: 1)) : due;
 
-    if (!scheduled.isAfter(DateTime.now())) {
+    DateTime scheduled = due.subtract(task.reminder.offset);
+
+    // If the chosen "before" time already passed but the task is still
+    // upcoming, notify at the actual due time instead of dropping it.
+    if (!scheduled.isAfter(now) && due.isAfter(now)) {
+      scheduled = due;
+    }
+
+    // A task saved for today without an explicit time should still receive
+    // a useful notification shortly after it is created.
+    if (!task.hasDueTime &&
+        _sameDate(task.dueDate, now) &&
+        !scheduled.isAfter(now)) {
+      scheduled = now.add(const Duration(seconds: 8));
+    }
+
+    if (!scheduled.isAfter(now)) {
       return;
     }
 
     await _schedule(
       id: _stableId('task-${task.id}'),
-      title: 'משימה קרובה',
+      title: task.reminder == TaskReminder.atTime
+          ? 'הגיע הזמן למשימה'
+          : 'משימה מתקרבת',
       body: task.title,
       date: scheduled,
       payload: '/tasks',
