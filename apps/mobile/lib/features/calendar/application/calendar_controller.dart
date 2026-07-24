@@ -3,6 +3,7 @@ import '../../families/application/family_controller.dart';
 import '../data/calendar_repository.dart';
 import '../data/local_calendar_repository.dart';
 import '../domain/calendar_event.dart';
+import '../../notifications/application/notification_service.dart';
 
 class CalendarState {
   const CalendarState({
@@ -75,6 +76,13 @@ class CalendarController extends StateNotifier<CalendarState> {
       createdAt: now,
     );
     await _persist(<CalendarEvent>[...state.events, event]);
+
+    try {
+      await NotificationService.instance.scheduleEventReminder(event);
+    } catch (_) {
+      // Saving an event must not fail because of notifications.
+    }
+
     return true;
   }
 
@@ -85,6 +93,13 @@ class CalendarController extends StateNotifier<CalendarState> {
     await _persist(state.events.map((CalendarEvent value) {
       return value.id == event.id ? event : value;
     }).toList());
+
+    try {
+      await NotificationService.instance.scheduleEventReminder(event);
+    } catch (_) {
+      // Saving an event must not fail because of notifications.
+    }
+
     return true;
   }
 

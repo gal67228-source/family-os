@@ -82,6 +82,36 @@ class NotificationService {
     _initializationFuture = null;
   }
 
+  Future<bool> notificationsEnabled() async {
+    await initialize();
+
+    if (Platform.isAndroid) {
+      return await _plugin
+              .resolvePlatformSpecificImplementation<
+                  AndroidFlutterLocalNotificationsPlugin>()
+              ?.areNotificationsEnabled() ??
+          true;
+    }
+
+    if (Platform.isIOS) {
+      final NotificationsEnabledOptions? options = await _plugin
+          .resolvePlatformSpecificImplementation<
+              IOSFlutterLocalNotificationsPlugin>()
+          ?.checkPermissions();
+
+      return options?.isEnabled ?? false;
+    }
+
+    return true;
+  }
+
+  Future<int> pendingNotificationCount() async {
+    await initialize();
+    final List<PendingNotificationRequest> pending =
+        await _plugin.pendingNotificationRequests();
+    return pending.length;
+  }
+
   Future<bool> requestPermissions() async {
     await initialize();
     bool granted = true;
@@ -128,6 +158,30 @@ class NotificationService {
     );
   }
 
+  Future<void> scheduleEventReminder(
+    CalendarEvent event,
+  ) async {
+    await initialize();
+    final NotificationSettings settings = await _settingsRepository.load();
+
+    if (!settings.enabled || !settings.eventReminders) {
+      return;
+    }
+
+    await _scheduleEvent(event);
+  }
+
+  Future<void> scheduleTaskReminder(FamilyTask task) async {
+    await initialize();
+    final NotificationSettings settings = await _settingsRepository.load();
+
+    if (!settings.enabled || !settings.taskReminders) {
+      return;
+    }
+
+    await _scheduleTask(task);
+  }
+
   Future<void> sync({
     required List<CalendarEvent> events,
     required List<FamilyTask> tasks,
@@ -146,19 +200,31 @@ class NotificationService {
 
     if (settings.eventReminders) {
       for (final CalendarEvent event in events) {
-        await _scheduleEvent(event);
+        try {
+          await _scheduleEvent(event);
+        } catch (_) {
+          // A malformed event must not prevent other reminders.
+        }
       }
     }
 
     if (settings.taskReminders) {
       for (final FamilyTask task in tasks) {
-        await _scheduleTask(task);
+        try {
+          await _scheduleTask(task);
+        } catch (_) {
+          // A malformed task must not prevent other reminders.
+        }
       }
     }
 
     if (settings.shoppingReminders) {
       for (final RecurringProduct product in recurringProducts) {
-        await _scheduleRecurringProduct(product);
+        try {
+          await _scheduleRecurringProduct(product);
+        } catch (_) {
+          // A malformed product must not prevent other reminders.
+        }
       }
     }
 
@@ -401,10 +467,39 @@ class NotificationService {
     required DateTime date,
     required String payload,
   }) async {
+    final DateTime now = DateTime.now();
+    final Duration delay = date.difference(now);
+
+    if (delay <= const Duration(seconds: 15)) {
+      await _plugin.show(
+        id,
+        title,
+        body,
+        _details(),
+        payload: payload,
+      );
+      return;
+    }
+
     final tz.TZDateTime scheduled = tz.TZDateTime.from(
       date,
       tz.local,
     );
+
+    AndroidScheduleMode mode = AndroidScheduleMode.inexactAllowWhileIdle;
+
+    if (Platform.isAndroid) {
+      final AndroidFlutterLocalNotificationsPlugin? android =
+          _plugin.resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin>();
+
+      final bool exactAllowed =
+          await android?.canScheduleExactNotifications() ?? false;
+
+      if (exactAllowed) {
+        mode = AndroidScheduleMode.exactAllowWhileIdle;
+      }
+    }
 
     await _plugin.zonedSchedule(
       id,
@@ -412,7 +507,7 @@ class NotificationService {
       body,
       scheduled,
       _details(),
-      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+      androidScheduleMode: mode,
       payload: payload,
     );
   }

@@ -21,11 +21,6 @@ Future<void> main() async {
     NotificationService.instance
         .initialize(onOpenRoute: appRouter.go)
         .timeout(const Duration(seconds: 4))
-        .then((_) async {
-      await Future<void>.delayed(
-        const Duration(milliseconds: 900),
-      );
-      await NotificationService.instance.requestPermissions();
-    }).catchError((Object _) {}),
+        .catchError((Object _) {}),
   );
 }

@@ -3,6 +3,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 
 import '../core/theme/app_theme.dart';
 import '../features/notifications/application/notification_coordinator.dart';
+import '../features/notifications/presentation/notification_permission_gate.dart';
 import 'router.dart';
 
 class FamilyOsApp extends StatelessWidget {
@@ -27,8 +28,10 @@ class FamilyOsApp extends StatelessWidget {
       themeMode: ThemeMode.light,
       routerConfig: appRouter,
       builder: (BuildContext context, Widget? child) {
-        return NotificationCoordinator(
-          child: child ?? const SizedBox.shrink(),
+        return NotificationPermissionGate(
+          child: NotificationCoordinator(
+            child: child ?? const SizedBox.shrink(),
+          ),
         );
       },
     );

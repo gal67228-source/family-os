@@ -17,6 +17,8 @@ class _NotificationSettingsScreenState
     extends State<NotificationSettingsScreen> {
   NotificationSettings? _settings;
   bool _saving = false;
+  bool? _permissionEnabled;
+  int _pendingCount = 0;
 
   @override
   void initState() {
@@ -28,8 +30,17 @@ class _NotificationSettingsScreenState
     final NotificationSettings settings =
         await NotificationService.instance.loadSettings();
 
+    final bool enabled =
+        await NotificationService.instance.notificationsEnabled();
+    final int pending =
+        await NotificationService.instance.pendingNotificationCount();
+
     if (mounted) {
-      setState(() => _settings = settings);
+      setState(() {
+        _settings = settings;
+        _permissionEnabled = enabled;
+        _pendingCount = pending;
+      });
     }
   }
 
@@ -199,6 +210,37 @@ class _NotificationSettingsScreenState
                       ],
                     ),
                   ),
+                  const SizedBox(height: 14),
+                  AppCard(
+                    child: Column(
+                      children: <Widget>[
+                        ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          leading: Icon(
+                            _permissionEnabled == true
+                                ? Icons.check_circle_rounded
+                                : Icons.error_outline_rounded,
+                            color: _permissionEnabled == true
+                                ? AppColors.secondary
+                                : AppColors.error,
+                          ),
+                          title: Text(
+                            _permissionEnabled == true
+                                ? 'הרשאת המערכת פעילה'
+                                : 'הרשאת המערכת חסומה',
+                          ),
+                          subtitle: Text(
+                            '$_pendingCount תזכורות מתוזמנות כרגע',
+                          ),
+                        ),
+                        OutlinedButton.icon(
+                          onPressed: _load,
+                          icon: const Icon(Icons.refresh_rounded),
+                          label: const Text('רענן מצב'),
+                        ),
+                      ],
+                    ),
+                  ),
                   const SizedBox(height: 18),
                   FilledButton.icon(
                     onPressed: () async {
@@ -209,6 +251,8 @@ class _NotificationSettingsScreenState
                         await NotificationService.instance
                             .showTestNotification();
                       }
+
+                      await _load();
 
                       if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(

@@ -1,5 +1,14 @@
 # Changelog
 
+## 3.0.6
+- Added a visible startup permission explanation and native permission request.
+- Sends a test notification immediately after permission is granted.
+- Added live permission status and pending-reminder count to notification settings.
+- Events and tasks now schedule their reminder directly after saving.
+- Near-term reminders are shown immediately instead of relying on delayed inexact alarms.
+- Uses exact Android alarms when exact scheduling permission is available.
+- One invalid reminder no longer prevents all other reminders from being scheduled.
+
 ## 3.0.5
 - Requests notification permission shortly after application startup.
 - Fixed calendar event reminders being skipped when the selected lead time had already passed.

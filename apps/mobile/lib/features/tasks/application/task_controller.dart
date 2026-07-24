@@ -4,6 +4,7 @@ import '../../families/application/family_controller.dart';
 import '../data/local_task_repository.dart';
 import '../data/task_repository.dart';
 import '../domain/family_task.dart';
+import '../../notifications/application/notification_service.dart';
 
 class TaskState {
   const TaskState({
@@ -68,6 +69,13 @@ class TaskController extends StateNotifier<TaskState> {
     );
 
     await _persist(<FamilyTask>[...state.tasks, task]);
+
+    try {
+      await NotificationService.instance.scheduleTaskReminder(task);
+    } catch (_) {
+      // Saving a task must not fail because of notifications.
+    }
+
     return true;
   }
 
