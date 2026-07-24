@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 import '../core/theme/app_theme.dart';
+import '../features/notifications/application/notification_coordinator.dart';
 import 'router.dart';
 
 class FamilyOsApp extends StatelessWidget {
@@ -25,6 +26,11 @@ class FamilyOsApp extends StatelessWidget {
       theme: AppTheme.light,
       themeMode: ThemeMode.light,
       routerConfig: appRouter,
+      builder: (BuildContext context, Widget? child) {
+        return NotificationCoordinator(
+          child: child ?? const SizedBox.shrink(),
+        );
+      },
     );
   }
 }

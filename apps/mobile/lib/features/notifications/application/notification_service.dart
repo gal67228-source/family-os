@@ -1,0 +1,408 @@
+import 'dart:io';
+
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:flutter_timezone/flutter_timezone.dart';
+import 'package:timezone/data/latest.dart' as tz;
+import 'package:timezone/timezone.dart' as tz;
+
+import '../../calendar/domain/calendar_event.dart';
+import '../../shopping/domain/recurring_product.dart';
+import '../../shopping/domain/shopping_item.dart';
+import '../../tasks/domain/family_task.dart';
+import '../data/notification_settings_repository.dart';
+import '../domain/notification_settings.dart';
+
+typedef NotificationRouteHandler = void Function(String route);
+
+class NotificationService {
+  NotificationService._();
+
+  static final NotificationService instance = NotificationService._();
+
+  static const String _channelId = 'family_os_reminders';
+  static const String _channelName = 'תזכורות Family OS';
+  static const String _channelDescription = 'התראות על אירועים, משימות וקניות';
+
+  final FlutterLocalNotificationsPlugin _plugin =
+      FlutterLocalNotificationsPlugin();
+  final NotificationSettingsRepository _settingsRepository =
+      NotificationSettingsRepository();
+
+  NotificationRouteHandler? _routeHandler;
+  bool _initialized = false;
+
+  Future<void> initialize({
+    NotificationRouteHandler? onOpenRoute,
+  }) async {
+    if (_initialized) {
+      _routeHandler = onOpenRoute ?? _routeHandler;
+      return;
+    }
+
+    _routeHandler = onOpenRoute;
+    tz.initializeTimeZones();
+
+    try {
+      final timezone = await FlutterTimezone.getLocalTimezone();
+      tz.setLocalLocation(tz.getLocation(timezone.identifier));
+    } catch (_) {
+      tz.setLocalLocation(tz.UTC);
+    }
+
+    const AndroidInitializationSettings android =
+        AndroidInitializationSettings('ic_notification');
+    const DarwinInitializationSettings darwin = DarwinInitializationSettings(
+      requestAlertPermission: true,
+      requestBadgePermission: true,
+      requestSoundPermission: true,
+    );
+    const InitializationSettings settings = InitializationSettings(
+      android: android,
+      iOS: darwin,
+    );
+
+    await _plugin.initialize(
+      settings,
+      onDidReceiveNotificationResponse: (NotificationResponse response) {
+        final String? route = response.payload;
+        if (route != null && route.isNotEmpty) {
+          _routeHandler?.call(route);
+        }
+      },
+    );
+
+    if (Platform.isAndroid) {
+      await _plugin
+          .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin>()
+          ?.requestNotificationsPermission();
+    }
+
+    _initialized = true;
+  }
+
+  Future<bool> requestPermissions() async {
+    bool granted = true;
+
+    if (Platform.isAndroid) {
+      granted = await _plugin
+              .resolvePlatformSpecificImplementation<
+                  AndroidFlutterLocalNotificationsPlugin>()
+              ?.requestNotificationsPermission() ??
+          true;
+    }
+
+    if (Platform.isIOS) {
+      granted = await _plugin
+              .resolvePlatformSpecificImplementation<
+                  IOSFlutterLocalNotificationsPlugin>()
+              ?.requestPermissions(
+                alert: true,
+                badge: true,
+                sound: true,
+              ) ??
+          true;
+    }
+
+    return granted;
+  }
+
+  Future<NotificationSettings> loadSettings() {
+    return _settingsRepository.load();
+  }
+
+  Future<void> saveSettings(NotificationSettings settings) {
+    return _settingsRepository.save(settings);
+  }
+
+  Future<void> showTestNotification() async {
+    await _plugin.show(
+      999999,
+      'Family OS',
+      'ההתראות פועלות בהצלחה 🎉',
+      _details(),
+      payload: '/today',
+    );
+  }
+
+  Future<void> sync({
+    required List<CalendarEvent> events,
+    required List<FamilyTask> tasks,
+    required List<RecurringProduct> recurringProducts,
+    required List<ShoppingItem> shoppingItems,
+  }) async {
+    if (!_initialized) {
+      return;
+    }
+
+    final NotificationSettings settings = await _settingsRepository.load();
+
+    await _plugin.cancelAll();
+
+    if (!settings.enabled) {
+      return;
+    }
+
+    if (settings.eventReminders) {
+      for (final CalendarEvent event in events) {
+        await _scheduleEvent(event);
+      }
+    }
+
+    if (settings.taskReminders) {
+      for (final FamilyTask task in tasks) {
+        await _scheduleTask(task);
+      }
+    }
+
+    if (settings.shoppingReminders) {
+      for (final RecurringProduct product in recurringProducts) {
+        await _scheduleRecurringProduct(product);
+      }
+    }
+
+    if (settings.dailySummary) {
+      await _scheduleDailySummary(
+        settings: settings,
+        events: events,
+        tasks: tasks,
+        shoppingItems: shoppingItems,
+      );
+    }
+  }
+
+  Future<void> _scheduleEvent(CalendarEvent event) async {
+    if (event.reminder == CalendarReminder.none) {
+      return;
+    }
+
+    final Duration offset = switch (event.reminder) {
+      CalendarReminder.none => Duration.zero,
+      CalendarReminder.tenMinutes => const Duration(minutes: 10),
+      CalendarReminder.thirtyMinutes => const Duration(minutes: 30),
+      CalendarReminder.oneHour => const Duration(hours: 1),
+      CalendarReminder.oneDay => const Duration(days: 1),
+      CalendarReminder.oneWeek => const Duration(days: 7),
+    };
+
+    DateTime occurrence = event.start;
+    final DateTime now = DateTime.now();
+
+    if (event.recurrence != CalendarRecurrence.none &&
+        occurrence.isBefore(now)) {
+      occurrence = _nextEventOccurrence(event, now);
+    }
+
+    final DateTime scheduled = occurrence.subtract(offset);
+    if (!scheduled.isAfter(now)) {
+      return;
+    }
+
+    await _schedule(
+      id: _stableId('event-${event.id}'),
+      title: 'אירוע מתקרב',
+      body: event.title,
+      date: scheduled,
+      payload: '/calendar/edit/${event.id}',
+    );
+  }
+
+  DateTime _nextEventOccurrence(
+    CalendarEvent event,
+    DateTime after,
+  ) {
+    DateTime candidate = event.start;
+    final int interval =
+        event.recurrenceInterval < 1 ? 1 : event.recurrenceInterval;
+
+    while (!candidate.isAfter(after)) {
+      candidate = switch (event.recurrence) {
+        CalendarRecurrence.none => candidate,
+        CalendarRecurrence.daily => candidate.add(Duration(days: interval)),
+        CalendarRecurrence.weekly =>
+          candidate.add(Duration(days: interval * 7)),
+        CalendarRecurrence.monthly => DateTime(
+            candidate.year,
+            candidate.month + interval,
+            candidate.day,
+            candidate.hour,
+            candidate.minute,
+          ),
+        CalendarRecurrence.yearly => DateTime(
+            candidate.year + interval,
+            candidate.month,
+            candidate.day,
+            candidate.hour,
+            candidate.minute,
+          ),
+      };
+
+      if (event.recurrence == CalendarRecurrence.none) {
+        break;
+      }
+    }
+
+    return candidate;
+  }
+
+  Future<void> _scheduleTask(FamilyTask task) async {
+    if (task.isCompleted) {
+      return;
+    }
+
+    final DateTime due = task.hasDueTime
+        ? task.dueDate
+        : DateTime(
+            task.dueDate.year,
+            task.dueDate.month,
+            task.dueDate.day,
+            8,
+          );
+    final DateTime scheduled =
+        task.hasDueTime ? due.subtract(const Duration(hours: 1)) : due;
+
+    if (!scheduled.isAfter(DateTime.now())) {
+      return;
+    }
+
+    await _schedule(
+      id: _stableId('task-${task.id}'),
+      title: 'משימה קרובה',
+      body: task.title,
+      date: scheduled,
+      payload: '/tasks',
+    );
+  }
+
+  Future<void> _scheduleRecurringProduct(
+    RecurringProduct product,
+  ) async {
+    DateTime scheduled;
+
+    if (product.lastAddedAt == null) {
+      scheduled = DateTime.now().add(const Duration(seconds: 10));
+    } else {
+      final DateTime next = product.cadence.nextDate(product.lastAddedAt!);
+      scheduled = DateTime(
+        next.year,
+        next.month,
+        next.day,
+        9,
+      );
+    }
+
+    if (!scheduled.isAfter(DateTime.now())) {
+      scheduled = DateTime.now().add(const Duration(seconds: 10));
+    }
+
+    await _schedule(
+      id: _stableId('shopping-${product.id}'),
+      title: 'הגיע הזמן לקנות',
+      body: product.name,
+      date: scheduled,
+      payload: '/shopping',
+    );
+  }
+
+  Future<void> _scheduleDailySummary({
+    required NotificationSettings settings,
+    required List<CalendarEvent> events,
+    required List<FamilyTask> tasks,
+    required List<ShoppingItem> shoppingItems,
+  }) async {
+    final DateTime now = DateTime.now();
+    final int todayEvents = events
+        .where((CalendarEvent event) => _sameDate(event.start, now))
+        .length;
+    final int todayTasks = tasks
+        .where(
+          (FamilyTask task) =>
+              !task.isCompleted && _sameDate(task.dueDate, now),
+        )
+        .length;
+    final int shoppingCount =
+        shoppingItems.where((ShoppingItem item) => !item.isChecked).length;
+
+    final String body = '$todayEvents אירועים · $todayTasks משימות · '
+        '$shoppingCount פריטים לקנייה';
+
+    tz.TZDateTime scheduled = tz.TZDateTime(
+      tz.local,
+      now.year,
+      now.month,
+      now.day,
+      settings.dailySummaryHour,
+      settings.dailySummaryMinute,
+    );
+
+    if (!scheduled.isAfter(tz.TZDateTime.now(tz.local))) {
+      scheduled = scheduled.add(const Duration(days: 1));
+    }
+
+    await _plugin.zonedSchedule(
+      _stableId('daily-summary'),
+      'בוקר טוב 👋',
+      body,
+      scheduled,
+      _details(),
+      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+      matchDateTimeComponents: DateTimeComponents.time,
+      payload: '/today',
+    );
+  }
+
+  Future<void> _schedule({
+    required int id,
+    required String title,
+    required String body,
+    required DateTime date,
+    required String payload,
+  }) async {
+    final tz.TZDateTime scheduled = tz.TZDateTime.from(
+      date,
+      tz.local,
+    );
+
+    await _plugin.zonedSchedule(
+      id,
+      title,
+      body,
+      scheduled,
+      _details(),
+      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+      payload: payload,
+    );
+  }
+
+  NotificationDetails _details() {
+    return const NotificationDetails(
+      android: AndroidNotificationDetails(
+        _channelId,
+        _channelName,
+        channelDescription: _channelDescription,
+        importance: Importance.high,
+        priority: Priority.high,
+        icon: 'ic_notification',
+      ),
+      iOS: DarwinNotificationDetails(
+        presentAlert: true,
+        presentBadge: true,
+        presentSound: true,
+      ),
+    );
+  }
+
+  bool _sameDate(DateTime first, DateTime second) {
+    return first.year == second.year &&
+        first.month == second.month &&
+        first.day == second.day;
+  }
+
+  int _stableId(String value) {
+    int hash = 0;
+    for (final int code in value.codeUnits) {
+      hash = ((hash * 31) + code) & 0x7fffffff;
+    }
+    return hash;
+  }
+}

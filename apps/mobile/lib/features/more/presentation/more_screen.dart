@@ -39,6 +39,16 @@ class MoreScreen extends ConsumerWidget {
               leading: Icon(Icons.description_rounded),
               title: Text('מסמכים'),
             ),
+            ListTile(
+              leading: const Icon(
+                Icons.notifications_active_rounded,
+              ),
+              title: const Text('התראות'),
+              subtitle: const Text(
+                'תזכורות, סיכום יומי והרשאות',
+              ),
+              onTap: () => context.push('/notifications/settings'),
+            ),
             const ListTile(
               leading: Icon(Icons.settings_rounded),
               title: Text('הגדרות'),

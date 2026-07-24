@@ -1,5 +1,15 @@
 # Changelog
 
+## 3.0.0
+- Added local notifications for calendar events.
+- Added task due-date reminders.
+- Added recurring shopping-product reminders.
+- Added a configurable daily family summary.
+- Added notification permission handling for Android and iOS.
+- Added deep links from notifications to the relevant app screen.
+- Added a notification settings screen and test-notification action.
+- Added Android boot rescheduling receivers and Java desugaring setup.
+
 ## 2.5.1
 - Removed the Pillow/PIL dependency from cloud builds.
 - Added pre-generated Android and iOS application icons to the source package.

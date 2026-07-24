@@ -13,6 +13,7 @@ import '../features/families/presentation/join_family_screen.dart';
 import '../features/families/presentation/manage_family_screen.dart';
 import '../features/families/presentation/switch_family_screen.dart';
 import '../features/more/presentation/more_screen.dart';
+import '../features/notifications/presentation/notification_settings_screen.dart';
 import '../features/shopping/presentation/add_shopping_item_screen.dart';
 import '../features/shopping/presentation/archived_shopping_lists_screen.dart';
 import '../features/shopping/presentation/edit_shopping_item_screen.dart';
@@ -90,6 +91,12 @@ final GoRouter appRouter = GoRouter(
       path: '/family/switch',
       builder: (BuildContext context, GoRouterState state) {
         return const SwitchFamilyScreen();
+      },
+    ),
+    GoRoute(
+      path: '/notifications/settings',
+      builder: (BuildContext context, GoRouterState state) {
+        return const NotificationSettingsScreen();
       },
     ),
     GoRoute(

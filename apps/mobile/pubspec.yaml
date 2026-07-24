@@ -1,7 +1,7 @@
 name: family_os
 description: Family OS mobile application.
 publish_to: none
-version: 2.5.1+69
+version: 3.0.0+70
 
 environment:
   sdk: ">=3.5.0 <4.0.0"
@@ -16,6 +16,9 @@ dependencies:
   go_router: ^14.8.1
   shared_preferences: ^2.3.2
   speech_to_text: ^7.4.0
+  flutter_local_notifications: ^19.5.0
+  flutter_timezone: ^5.1.0
+  timezone: ^0.10.1
 
 dev_dependencies:
   flutter_test:

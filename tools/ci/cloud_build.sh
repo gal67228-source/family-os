@@ -62,6 +62,11 @@ for density in mdpi hdpi xhdpi xxhdpi xxxhdpi; do
     "android/app/src/main/res/mipmap-${density}/ic_launcher.png"
 done
 
+mkdir -p android/app/src/main/res/drawable
+cp \
+  /tmp/family-os-source/tools/branding/generated/android/drawable/ic_notification.png \
+  android/app/src/main/res/drawable/ic_notification.png
+
 rm -rf ios/Runner/Assets.xcassets/AppIcon.appiconset
 mkdir -p ios/Runner/Assets.xcassets/AppIcon.appiconset
 cp -R \
@@ -103,6 +108,19 @@ permissions = """    <uses-permission android:name="android.permission.RECORD_AU
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
 """
 
+notification_permissions = """    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+"""
+
+if "android.permission.POST_NOTIFICATIONS" not in text:
+    manifest_close = text.find(">")
+    text = (
+        text[: manifest_close + 1]
+        + "\n"
+        + notification_permissions
+        + text[manifest_close + 1 :]
+    )
+
 if "android.permission.RECORD_AUDIO" not in text:
     manifest_close = text.find(">")
     if manifest_close == -1:
@@ -127,7 +145,43 @@ if "android.speech.RecognitionService" not in text:
         raise RuntimeError("AndroidManifest.xml has no application tag.")
     text = text[:application_index] + queries + text[application_index:]
 
+receivers = """        <receiver
+            android:exported="false"
+            android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver" />
+        <receiver
+            android:exported="false"
+            android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationBootReceiver">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+                <action android:name="com.htc.intent.action.QUICKBOOT_POWERON" />
+            </intent-filter>
+        </receiver>
+"""
+
+if "ScheduledNotificationReceiver" not in text:
+    application_end = text.find("</application>")
+    if application_end == -1:
+        raise RuntimeError("AndroidManifest.xml has no application closing tag.")
+    text = text[:application_end] + receivers + text[application_end:]
+
 manifest.write_text(text, encoding="utf-8")
+
+gradle = Path("android/app/build.gradle.kts")
+gradle_text = gradle.read_text(encoding="utf-8")
+gradle_text = gradle_text.replace(
+    "sourceCompatibility = JavaVersion.VERSION_17",
+    "sourceCompatibility = JavaVersion.VERSION_17\\n"
+    "        isCoreLibraryDesugaringEnabled = true",
+)
+if "desugar_jdk_libs" not in gradle_text:
+    gradle_text = gradle_text.replace(
+        "dependencies {",
+        'dependencies {\\n'
+        '    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")',
+    )
+gradle.write_text(gradle_text, encoding="utf-8")
 
 info = Path("ios/Runner/Info.plist")
 info_text = info.read_text(encoding="utf-8")
