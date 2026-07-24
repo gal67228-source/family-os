@@ -1,5 +1,14 @@
 # Changelog
 
+## 3.0.7
+- Notification plugin initialization no longer waits for device time-zone detection.
+- Time-zone detection now runs in the background with a two-second timeout.
+- Added an Asia/Jerusalem fallback when device time-zone lookup fails.
+- Removed the custom Android small icon from notification details to avoid device-specific display failures.
+- Test notifications now use maximum priority, sound and vibration.
+- Added visible timeout and error diagnostics to permission setup and notification testing.
+- Added a direct notification diagnostic status action in settings.
+
 ## 3.0.6
 - Added a visible startup permission explanation and native permission request.
 - Sends a test notification immediately after permission is granted.

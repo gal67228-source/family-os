@@ -272,10 +272,33 @@ class _NotificationSettingsScreenState
                   const SizedBox(height: 10),
                   OutlinedButton.icon(
                     onPressed: () async {
-                      await NotificationService.instance.showTestNotification();
+                      try {
+                        await NotificationService.instance
+                            .showTestNotification()
+                            .timeout(const Duration(seconds: 4));
+
+                        final String status = await NotificationService.instance
+                            .diagnosticStatus();
+
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text(status)),
+                          );
+                        }
+                      } catch (error) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                'שליחת ההתראה נכשלה: $error',
+                              ),
+                            ),
+                          );
+                        }
+                      }
                     },
                     icon: const Icon(Icons.notifications_active_rounded),
-                    label: const Text('שלח התראת בדיקה'),
+                    label: const Text('שלח ובדוק התראה עכשיו'),
                   ),
                   if (_saving) ...<Widget>[
                     const SizedBox(height: 16),

@@ -35,9 +35,12 @@ class _NotificationPermissionGateState
     _checked = true;
 
     try {
-      await NotificationService.instance.initialize();
-      final bool enabled =
-          await NotificationService.instance.notificationsEnabled();
+      await NotificationService.instance
+          .initialize()
+          .timeout(const Duration(seconds: 4));
+      final bool enabled = await NotificationService.instance
+          .notificationsEnabled()
+          .timeout(const Duration(seconds: 4));
 
       if (enabled || !mounted) {
         return;
@@ -78,11 +81,14 @@ class _NotificationPermissionGateState
         return;
       }
 
-      final bool granted =
-          await NotificationService.instance.requestPermissions();
+      final bool granted = await NotificationService.instance
+          .requestPermissions()
+          .timeout(const Duration(seconds: 8));
 
       if (granted) {
-        await NotificationService.instance.showTestNotification();
+        await NotificationService.instance
+            .showTestNotification()
+            .timeout(const Duration(seconds: 4));
       }
 
       if (mounted) {
@@ -97,8 +103,16 @@ class _NotificationPermissionGateState
           ),
         );
       }
-    } catch (_) {
-      // Permission setup must not affect the rest of the application.
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'לא הצלחנו להפעיל התראות: $error',
+            ),
+          ),
+        );
+      }
     }
   }
 

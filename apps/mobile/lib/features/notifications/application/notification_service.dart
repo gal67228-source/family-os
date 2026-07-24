@@ -49,13 +49,6 @@ class NotificationService {
   Future<void> _initializeInternal() async {
     tz.initializeTimeZones();
 
-    try {
-      final timezone = await FlutterTimezone.getLocalTimezone();
-      tz.setLocalLocation(tz.getLocation(timezone.identifier));
-    } catch (_) {
-      tz.setLocalLocation(tz.UTC);
-    }
-
     const AndroidInitializationSettings android =
         AndroidInitializationSettings('ic_notification');
     const DarwinInitializationSettings darwin = DarwinInitializationSettings(
@@ -80,6 +73,26 @@ class NotificationService {
 
     _initialized = true;
     _initializationFuture = null;
+
+    // Time-zone detection is useful for future schedules, but it must never
+    // block permission requests or immediate notifications.
+    _configureLocalTimezone();
+  }
+
+  Future<void> _configureLocalTimezone() async {
+    try {
+      final timezone = await FlutterTimezone.getLocalTimezone()
+          .timeout(const Duration(seconds: 2));
+      tz.setLocalLocation(tz.getLocation(timezone.identifier));
+    } catch (_) {
+      // Hebrew is the primary locale of this app, so this is a safer
+      // scheduling fallback than UTC when device time-zone lookup fails.
+      try {
+        tz.setLocalLocation(tz.getLocation('Asia/Jerusalem'));
+      } catch (_) {
+        tz.setLocalLocation(tz.UTC);
+      }
+    }
   }
 
   Future<bool> notificationsEnabled() async {
@@ -153,9 +166,35 @@ class NotificationService {
       999999,
       'Family OS',
       'ההתראות פועלות בהצלחה 🎉',
-      _details(),
+      const NotificationDetails(
+        android: AndroidNotificationDetails(
+          _channelId,
+          _channelName,
+          channelDescription: _channelDescription,
+          importance: Importance.max,
+          priority: Priority.max,
+          playSound: true,
+          enableVibration: true,
+        ),
+        iOS: DarwinNotificationDetails(
+          presentAlert: true,
+          presentBadge: true,
+          presentSound: true,
+        ),
+      ),
       payload: '/today',
     );
+  }
+
+  Future<String> diagnosticStatus() async {
+    await initialize();
+
+    final bool enabled = await notificationsEnabled();
+    final int pending = await pendingNotificationCount();
+
+    return enabled
+        ? 'הרשאה פעילה · $pending תזכורות מתוזמנות'
+        : 'הרשאת המערכת חסומה';
   }
 
   Future<void> scheduleEventReminder(
@@ -520,7 +559,8 @@ class NotificationService {
         channelDescription: _channelDescription,
         importance: Importance.high,
         priority: Priority.high,
-        icon: 'ic_notification',
+        playSound: true,
+        enableVibration: true,
       ),
       iOS: DarwinNotificationDetails(
         presentAlert: true,
