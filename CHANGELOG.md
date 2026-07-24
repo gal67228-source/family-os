@@ -1,5 +1,21 @@
 # Changelog
 
+## 2.5.1
+- Removed the Pillow/PIL dependency from cloud builds.
+- Added pre-generated Android and iOS application icons to the source package.
+- Cloud build now copies native icon files after flutter create.
+- Preserved the Family OS display name and branded splash experience.
+
+## 2.5.0
+- Added the official Family OS home, family and checkmark brand icon.
+- Added branded Android and iOS application icons during cloud build.
+- Added a redesigned animated splash screen.
+- Removed the large central floating add button.
+- Added contextual add buttons to Home, Calendar, Shopping and Tasks.
+- Added a Home quick-add menu for tasks, events and shopping items.
+- Redesigned and reordered the bottom navigation bar.
+- Updated the application display name to Family OS.
+
 ## 2.4.1
 - Added dated tasks directly to Month, Week, Day and Agenda calendar views.
 - Added blue task indicators to calendar days.

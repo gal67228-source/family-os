@@ -124,6 +124,15 @@ class _ShoppingScreenState extends ConsumerState<ShoppingScreen> {
           ),
           actions: <Widget>[
             IconButton(
+              tooltip: 'הוסף מוצר',
+              onPressed: () => context.push('/shopping/add'),
+              icon: const Icon(
+                Icons.add_circle_rounded,
+                color: AppColors.primary,
+                size: 28,
+              ),
+            ),
+            IconButton(
               tooltip: 'מוצרים קבועים',
               onPressed: () => context.push('/shopping/recurring'),
               icon: const Icon(Icons.repeat_rounded),

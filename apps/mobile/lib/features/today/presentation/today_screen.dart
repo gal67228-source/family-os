@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/design/app_colors.dart';
 import '../../../core/widgets/app_card.dart';
 import '../../../core/widgets/empty_state.dart';
+import '../../../core/widgets/family_os_logo.dart';
 import '../../dashboard/application/dashboard_provider.dart';
 import '../../dashboard/domain/dashboard_summary.dart';
 import '../../dashboard/presentation/dashboard_stat_card.dart';
@@ -15,6 +16,78 @@ import '../../tasks/domain/family_task.dart';
 
 class TodayScreen extends ConsumerWidget {
   const TodayScreen({super.key});
+
+  Future<void> _openQuickAdd(BuildContext context) async {
+    final String? route = await showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      builder: (BuildContext sheetContext) {
+        return Directionality(
+          textDirection: TextDirection.rtl,
+          child: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  Text(
+                    'מה מוסיפים למשפחה?',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w900,
+                        ),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: <Widget>[
+                      Expanded(
+                        child: _QuickAddTile(
+                          icon: Icons.add_task_rounded,
+                          label: 'משימה',
+                          color: AppColors.primary,
+                          onTap: () => Navigator.pop(
+                            sheetContext,
+                            '/tasks/new',
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: _QuickAddTile(
+                          icon: Icons.event_rounded,
+                          label: 'אירוע',
+                          color: const Color(0xFF7C3AED),
+                          onTap: () => Navigator.pop(
+                            sheetContext,
+                            '/calendar/new',
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: _QuickAddTile(
+                          icon: Icons.add_shopping_cart_rounded,
+                          label: 'מוצר',
+                          color: AppColors.secondary,
+                          onTap: () => Navigator.pop(
+                            sheetContext,
+                            '/shopping/add',
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+
+    if (route != null && context.mounted) {
+      context.push(route);
+    }
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -31,11 +104,32 @@ class TodayScreen extends ConsumerWidget {
       textDirection: TextDirection.rtl,
       child: Scaffold(
         appBar: AppBar(
-          title: Text(
-            family?.name ?? 'Family OS',
-            style: Theme.of(context).textTheme.titleLarge,
+          title: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              const FamilyOsLogo(size: 36),
+              const SizedBox(width: 10),
+              Flexible(
+                child: Text(
+                  family?.name ?? 'Family OS',
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w900,
+                      ),
+                ),
+              ),
+            ],
           ),
           actions: <Widget>[
+            IconButton(
+              tooltip: 'הוספה מהירה',
+              onPressed: () => _openQuickAdd(context),
+              icon: const Icon(
+                Icons.add_circle_rounded,
+                color: AppColors.primary,
+                size: 28,
+              ),
+            ),
             IconButton(
               tooltip: 'החלפת משפחה',
               onPressed: () => context.push('/family/switch'),
@@ -89,7 +183,7 @@ class TodayScreen extends ConsumerWidget {
                             value: '${summary.openTasks}',
                             background: AppColors.softBlue,
                             foreground: AppColors.primary,
-                            onTap: () => context.go('/tasks'),
+                            onTap: () => context.push('/tasks/new'),
                           ),
                           DashboardStatCard(
                             icon: Icons.warning_amber_rounded,
@@ -105,7 +199,7 @@ class TodayScreen extends ConsumerWidget {
                             value: '${summary.shoppingItems}',
                             background: AppColors.softGreen,
                             foreground: AppColors.secondary,
-                            onTap: () => context.go('/shopping'),
+                            onTap: () => context.push('/shopping/add'),
                           ),
                           DashboardStatCard(
                             icon: Icons.group_rounded,
@@ -276,6 +370,52 @@ class TodayScreen extends ConsumerWidget {
                       ),
                     ],
                   ),
+      ),
+    );
+  }
+}
+
+class _QuickAddTile extends StatelessWidget {
+  const _QuickAddTile({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(20),
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.10),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Column(
+          children: <Widget>[
+            CircleAvatar(
+              backgroundColor: color,
+              foregroundColor: Colors.white,
+              child: Icon(icon),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              label,
+              style: TextStyle(
+                color: color,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

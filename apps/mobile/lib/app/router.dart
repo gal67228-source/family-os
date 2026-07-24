@@ -175,9 +175,9 @@ final GoRouter appRouter = GoRouter(
         StatefulShellBranch(
           routes: <RouteBase>[
             GoRoute(
-              path: '/tasks',
+              path: '/calendar',
               builder: (BuildContext context, GoRouterState state) {
-                return const TasksScreen();
+                return const CalendarScreen();
               },
             ),
           ],
@@ -195,9 +195,9 @@ final GoRouter appRouter = GoRouter(
         StatefulShellBranch(
           routes: <RouteBase>[
             GoRoute(
-              path: '/calendar',
+              path: '/tasks',
               builder: (BuildContext context, GoRouterState state) {
-                return const CalendarScreen();
+                return const TasksScreen();
               },
             ),
           ],

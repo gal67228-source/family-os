@@ -1,7 +1,7 @@
 name: family_os
 description: Family OS mobile application.
 publish_to: none
-version: 2.4.1+66
+version: 2.5.1+69
 
 environment:
   sdk: ">=3.5.0 <4.0.0"
@@ -24,3 +24,5 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/branding/

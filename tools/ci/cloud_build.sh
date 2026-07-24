@@ -53,6 +53,42 @@ flutter create \
   --platforms android,ios \
   .
 
+echo "Installing pre-generated Family OS app icons..."
+
+for density in mdpi hdpi xhdpi xxhdpi xxxhdpi; do
+  mkdir -p "android/app/src/main/res/mipmap-${density}"
+  cp \
+    "/tmp/family-os-source/tools/branding/generated/android/mipmap-${density}/ic_launcher.png" \
+    "android/app/src/main/res/mipmap-${density}/ic_launcher.png"
+done
+
+rm -rf ios/Runner/Assets.xcassets/AppIcon.appiconset
+mkdir -p ios/Runner/Assets.xcassets/AppIcon.appiconset
+cp -R \
+  /tmp/family-os-source/tools/branding/generated/ios/AppIcon.appiconset/. \
+  ios/Runner/Assets.xcassets/AppIcon.appiconset/
+
+python3 - <<'PY'
+from pathlib import Path
+import re
+
+manifest = Path("android/app/src/main/AndroidManifest.xml")
+manifest_text = manifest.read_text(encoding="utf-8").replace(
+    'android:label="family_os"',
+    'android:label="Family OS"',
+)
+manifest.write_text(manifest_text, encoding="utf-8")
+
+info = Path("ios/Runner/Info.plist")
+info_text = info.read_text(encoding="utf-8")
+info_text = re.sub(
+    r"<key>CFBundleDisplayName</key>\s*<string>.*?</string>",
+    "<key>CFBundleDisplayName</key>\\n\\t<string>Family OS</string>",
+    info_text,
+    flags=re.S,
+)
+info.write_text(info_text, encoding="utf-8")
+PY
 
 python3 - <<'PY'
 from pathlib import Path
